@@ -65,7 +65,7 @@ Everything outside this repo the project depends on. All are free tiers. **Free-
 | `ACCESS_TOKEN_TTL_SECONDS` | no | `900` | |
 | `REFRESH_TOKEN_TTL_DAYS` | no | `7` | |
 | `WEB_ORIGIN` | yes | `http://localhost:3000` | allowed `Origin` for mutating requests |
-| `LOG_LEVEL` | no | `info` | |
+| `LOG_LEVEL` | no | `info` | `silent` in tests (set by Vitest config); `pino-pretty` output in development |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | seed only | — | creates first admin if absent |
 | `DEMO_USER_EMAIL` | seed only | `demo@shelfwise.dev` | demo user has no usable password |
 | `OPEN_LIBRARY_CONTACT` | yes | email or repo URL | in `User-Agent` |

@@ -1,18 +1,42 @@
 import { z } from 'zod';
 
-const EnvSchema = z.object({
-  NODE_ENV: z
-    .enum(['development', 'test', 'production'])
-    .default('development'),
-  PORT: z.coerce.number().int().positive().default(4000),
-  /** Git SHA of the deployed build. Render sets RENDER_GIT_COMMIT automatically. */
-  RENDER_GIT_COMMIT: z.string().optional(),
-});
+const LOG_LEVELS = [
+  'fatal',
+  'error',
+  'warn',
+  'info',
+  'debug',
+  'trace',
+  'silent',
+] as const;
+
+const EnvSchema = z
+  .object({
+    NODE_ENV: z
+      .enum(['development', 'test', 'production'])
+      .default('development'),
+    PORT: z.coerce.number().int().positive().default(4000),
+    LOG_LEVEL: z.enum(LOG_LEVELS).optional(),
+    /** Git SHA of the deployed build. Render sets RENDER_GIT_COMMIT automatically. */
+    RENDER_GIT_COMMIT: z.string().optional(),
+  })
+  .transform((env) => ({
+    ...env,
+    // Tests stay quiet unless LOG_LEVEL is set explicitly.
+    LOG_LEVEL: env.LOG_LEVEL ?? (env.NODE_ENV === 'test' ? 'silent' : 'info'),
+  }));
 
 export type Env = z.infer<typeof EnvSchema>;
 
-/** Loads `.env` (if present) and validates the environment. Exits on invalid config. */
-export function loadEnv(): Env {
+let cached: Env | undefined;
+
+/**
+ * Loads `.env` (if present) and validates the environment once.
+ * Exits the process with a readable message on invalid config (fail fast).
+ */
+export function getEnv(): Env {
+  if (cached) return cached;
+
   try {
     process.loadEnvFile();
   } catch (error) {
@@ -22,9 +46,10 @@ export function loadEnv(): Env {
   const result = EnvSchema.safeParse(process.env);
   if (!result.success) {
     console.error(
-      `Invalid environment configuration:\n${z.prettifyError(result.error)}`,
+      `Invalid environment configuration (see apps/api/.env.example):\n${z.prettifyError(result.error)}`,
     );
     process.exit(1);
   }
-  return result.data;
+  cached = result.data;
+  return cached;
 }

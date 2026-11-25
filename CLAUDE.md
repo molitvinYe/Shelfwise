@@ -76,9 +76,12 @@ Run from the repo root (pnpm 10 via Corepack: `corepack enable pnpm`).
 | `pnpm test` | unit tests (Vitest) |
 | `pnpm test:e2e` | API e2e tests (Vitest + Supertest) |
 | `pnpm format` / `pnpm format:check` | Prettier (Markdown excluded) |
+| `pnpm db:up` / `pnpm db:down` / `pnpm db:reset` | local Postgres via Docker Compose: dev `:5432`, test `:5433` (in-memory); reset wipes dev data |
 | `pnpm --filter @shelfwise/<pkg> <script>` | run a script in one package |
 
-_Added in later steps: `db:migrate`, `db:seed`, `data:fetch` (steps 2–7)._
+_Added in later steps: `db:migrate`, `db:seed`, `data:fetch` (steps 3–7)._
+
+Pre-commit hook (`simple-git-hooks` + `lint-staged`): Prettier on staged files, then lint of the touched app. Skip once with `SKIP_SIMPLE_GIT_HOOKS=1 git commit ...` only when really needed.
 
 ## Tooling notes
 
@@ -88,4 +91,7 @@ _Added in later steps: `db:migrate`, `db:seed`, `data:fetch` (steps 2–7)._
 - **TypeScript is pinned to `~6.0`.** TS 7 is out, but `typescript-eslint` and the Nest CLI don't support it yet.
 - **`@shelfwise/shared` must be built** before api/web can resolve it; the root scripts handle that.
 - **Next.js 16 conventions:** `middleware.ts` is called `proxy.ts`; Cache Components and Partial Prefetching are on. Read `apps/web/node_modules/next/dist/docs/` before using unfamiliar Next APIs (see `apps/web/AGENTS.md`).
+- **API errors:** throw `AppException(status, code, message, details?)` from `apps/api/src/common/errors`; the global `AllExceptionsFilter` renders the shared `ApiErrorBody`. Unexpected errors become `500 INTERNAL_ERROR` without internals.
+- **Logging:** `nestjs-pino`; inject `PinoLogger` (`@InjectPinoLogger(Context.name)`). Every response carries `x-request-id`.
+- **App setup shared with e2e:** `configureApp()` in `apps/api/src/app.setup.ts` (helmet, trust proxy); e2e tests must call it.
 - `apps/api/AGENTS.md` holds NestJS 12 framework notes from the generator.

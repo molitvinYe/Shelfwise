@@ -1,13 +1,20 @@
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module.js';
-import { loadEnv } from './config/env.js';
+import { configureApp } from './app.setup.js';
+import { getEnv } from './config/env.js';
 
 async function bootstrap() {
-  const env = loadEnv();
-  const app = await NestFactory.create(AppModule);
-  app.enableShutdownHooks();
+  const env = getEnv();
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
+  const logger = app.get(Logger);
+  app.useLogger(logger);
+  configureApp(app);
+
   await app.listen(env.PORT);
-  Logger.log(`API listening on http://localhost:${env.PORT}`, 'Bootstrap');
+  logger.log(`API listening on http://localhost:${env.PORT}`, 'Bootstrap');
 }
 await bootstrap();

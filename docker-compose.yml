@@ -1,0 +1,39 @@
+# Local infrastructure. Start: `pnpm db:up` · stop: `pnpm db:down` · wipe dev data: `pnpm db:reset`
+name: shelfwise
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shelfwise
+    ports:
+      - '127.0.0.1:5432:5432' # loopback only: never expose the dev DB to the network
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d shelfwise']
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # Disposable database for e2e tests: data lives in memory and is gone on restart.
+  db-test:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shelfwise_test
+    ports:
+      - '127.0.0.1:5433:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d shelfwise_test']
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  db-data:

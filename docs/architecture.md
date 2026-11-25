@@ -262,7 +262,7 @@ sequenceDiagram
 - **Validation:** every body/query/param goes through Nest 12's built-in `StandardSchemaValidationPipe` (`@Body({ schema })`, `@Query({ schema })`) with a Zod schema from `@shelfwise/shared`. Unknown keys are stripped.
 - **Errors:** one global exception filter; shape
   ```json
-  { "error": { "code": "VALIDATION_FAILED", "message": "Human readable", "details": [ ... ] } }
+  { "error": { "code": "VALIDATION_FAILED", "message": "Request validation failed", "details": [{ "path": "rating", "message": "Too big: expected number to be <=5" }] } }
   ```
   Codes are a shared enum (`packages/shared/src/errors.ts`). Status codes: 400 validation, 401 unauthenticated / `TOKEN_EXPIRED`, 403 forbidden, 404, 409 conflict (e.g. email taken), 429 rate/quota, 502 upstream (Open Library / Gemini) failure, 500 otherwise (message hidden, logged with request id).
 - **Pagination:** cursor-based everywhere ([ADR-0005](adr/0005-cursor-pagination.md)). Request `?limit=20&cursor=<opaque>`; `limit` max 50. Response `{ "items": [...], "nextCursor": "..." | null }`. Cursor = base64url JSON of the last item's sort key(s) + `id`.
