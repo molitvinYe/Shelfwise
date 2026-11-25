@@ -8,7 +8,10 @@ import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/app.setup.js';
 import type { PrismaClient } from '../src/generated/prisma/client.js';
 import { Roles } from '../src/modules/auth/decorators/roles.decorator.js';
-import { REUSE_INTERVAL_MS } from '../src/modules/auth/token.service.js';
+import {
+  MAX_GRACE_SUCCESSORS,
+  REUSE_INTERVAL_MS,
+} from '../src/modules/auth/token.service.js';
 import { DEMO_USER, seedUsers } from '../src/seed/seed-users.js';
 import { cookiesFrom, setCookieLine } from './auth-helpers.js';
 import { createTestPrisma, resetDatabase } from './db.js';
@@ -264,6 +267,18 @@ describe('Auth (e2e)', () => {
       const first = cookiesFrom(await register()).sw_refresh ?? '';
       await refresh(first).expect(200);
       await refresh(first).expect(200);
+    });
+
+    it('caps grace successors per rotated token, then treats replays as theft', async () => {
+      const first = cookiesFrom(await register()).sw_refresh ?? '';
+      await refresh(first).expect(200);
+      for (let i = 0; i < MAX_GRACE_SUCCESSORS; i++) {
+        await refresh(first).expect(200);
+      }
+      await refresh(first).expect(401);
+      expect(
+        await prisma.refreshToken.count({ where: { revokedAt: null } }),
+      ).toBe(0);
     });
 
     it('the reuse interval does not revive a logged-out family', async () => {

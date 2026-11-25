@@ -34,7 +34,7 @@ The UI. Public pages are Server Components (SEO, fast first paint); interactive 
   1. If `sw_access` is present and not expiring within 10 s (decode `exp` only with `jose` — verification happens in the API) → continue.
   2. Else if `sw_refresh` is present → `POST ${API_ORIGIN}/auth/refresh` server-side with that cookie; copy the `Set-Cookie` lines onto the browser response **and** onto the forwarded request cookies, so Server Components of this render already see the new access token. On a network error the cookies are left alone.
   3. No session on a protected prefix (`PROTECTED_PREFIXES`, now `/me`) → redirect to `/login?next=…`; a session on `/login` / `/register` → redirect to `safeNext(next)`.
-  - Parallel prefetches can all carry the same refresh cookie; the API's 30 s reuse interval makes that safe (docs/adr/0003).
+  - Parallel prefetches can all carry the same refresh cookie; the API's 10 s reuse interval (max 10 grace successors per token) makes that safe (docs/adr/0003).
 - `lib/api/server.ts` → `getCurrentUser()`: `PublicUser | null`, reads `sw_access` via `cookies()`, calls `/auth/me` server-to-server, `React.cache` per request; throws when the API is down (callers decide: the header falls back to the logged-out nav). Pages re-check it — `proxy.ts` is only a shortcut.
 - With Cache Components every session read sits inside `<Suspense>` (header `UserNav`, `/me` greeting); the rest of the page stays in the static shell.
 - `?next=` is passed through `safeNext()` (same-origin paths only) — no open redirects.

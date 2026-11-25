@@ -29,7 +29,7 @@ Registration, login, demo login, logout, token refresh with rotation and reuse d
   1. hash presented token → find row;
   2. not found or expired → 401;
   3. `revokedAt` set:
-     - rotated (`rotatedAt`) less than **30 s** ago and the family still has a live token → a concurrent request with the same cookie (parallel prefetches, two tabs): issue a successor, don't revoke;
+     - rotated (`rotatedAt`) less than **10 s** ago, the family still has a live token and fewer than **10** grace successors were issued from it (`graceCount`, conditional increment) → a concurrent request with the same cookie (parallel prefetches, two tabs): issue a successor, don't revoke;
      - otherwise **reuse detected** → revoke all tokens of that `familyId`, log a warning, 401;
   4. otherwise set `revokedAt = rotatedAt = now` (conditional on `revokedAt IS NULL`; a lost race goes through step 3), insert new token with same `familyId`, issue new access JWT.
 - **Logout:** revoke all tokens in the presented token's family; clear cookies even if no token.

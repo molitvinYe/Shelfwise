@@ -52,6 +52,8 @@ model RefreshToken {
   /// Set when the token was revoked by rotation (not logout / reuse). Within the reuse interval a
   /// rotated token may be presented again by a concurrent request without killing the family.
   rotatedAt DateTime? @db.Timestamptz(3)
+  /// Successors already issued from this token inside the reuse interval (capped).
+  graceCount Int      @default(0)
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

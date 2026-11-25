@@ -226,7 +226,7 @@ sequenceDiagram
   B->>W: retry GET /api/shelves
 ```
 
-For Server Components, `proxy.ts` performs the refresh before rendering if the access cookie is missing/expired but a refresh cookie exists; parallel requests with the same refresh cookie are covered by a 30 s reuse interval (details in [modules/web.md](modules/web.md), [ADR-0003](adr/0003-auth-jwt-refresh-rotation.md)).
+For Server Components, `proxy.ts` performs the refresh before rendering if the access cookie is missing/expired but a refresh cookie exists; parallel requests with the same refresh cookie are covered by a 10 s reuse interval (details in [modules/web.md](modules/web.md), [ADR-0003](adr/0003-auth-jwt-refresh-rotation.md)).
 
 ### AI advisor turn
 
