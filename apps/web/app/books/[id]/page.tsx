@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { BookCover, coverUrl } from '@/components/catalog/book-cover';
 import { BookReviews } from '@/components/catalog/book-reviews';
+import { ShelfPanel, ShelfPanelSkeleton } from '@/components/shelf/shelf-panel';
 import { getBook, getBookReviews } from '@/lib/api/catalog';
 import { catalogHref } from '@/lib/catalog/search-params';
 
@@ -156,6 +157,11 @@ async function BookDetails({
           </p>
         </div>
       </article>
+
+      {/* Per-viewer island: the rest of the page is cached and shared by everyone. */}
+      <Suspense fallback={<ShelfPanelSkeleton />}>
+        <ShelfPanel bookId={book.id} />
+      </Suspense>
 
       <BookReviews bookId={book.id} initial={reviews} />
     </>

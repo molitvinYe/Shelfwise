@@ -12,15 +12,16 @@ A user's relationship with a book: shelf status, rating, review. Also review mod
 
 | Method | Path | Auth | Body / Params | Response |
 |--------|------|------|---------------|----------|
-| GET | `/shelves/me` | access | status?, limit, cursor | `Page<ShelfItem>` (book + status/rating/review), sorted by `updatedAt desc` |
-| GET | `/users/:id/shelves` | public | status?, limit, cursor | same, public view (hidden reviews omitted) |
-| PUT | `/shelves/:bookId` | access | `UpsertShelfInput` {status, rating?, review?} | `ShelfItem` |
-| PATCH | `/shelves/:bookId` | access | `UpdateShelfInput` (partial) | `ShelfItem` |
-| DELETE | `/shelves/:bookId` | access | — | `204` |
-| GET | `/shelves/me/stats` | access | — | `ProfileStats` |
+| GET | `/shelves/me` | access | status?, limit, cursor | `Page<ShelfItem>` (entry + book), keyset on `(updatedAt desc, bookId desc)` — step 10 ✅ |
+| GET | `/shelves/me/books/:bookId` | access | — | `{ entry: ShelfEntry \| null }`, always 200 (book page `myShelf`) — step 10 ✅ |
+| PUT | `/shelves/:bookId` | access | `UpsertShelfInput` {status, rating?, review?} | `ShelfEntry` — step 10 ✅ |
+| PATCH | `/shelves/:bookId` | access | `UpdateShelfInput` (partial, ≥ 1 field) | `ShelfEntry`; `404` when not shelved — step 10 ✅ |
+| DELETE | `/shelves/:bookId` | access | — | `204`, also when not shelved (idempotent) — step 10 ✅ |
+| GET | `/users/:id/shelves` | public | status?, limit, cursor | same as `/shelves/me`, public view (hidden reviews omitted) — step 11 |
+| GET | `/shelves/me/stats` | access | — | `ProfileStats` — step 11 |
 
 ## Business rules
-- `PUT` is an upsert on `(userId, bookId)` → idempotent, ideal for optimistic UI. `404 BOOK_NOT_FOUND` if the book doesn't exist.
+- `PUT` is an upsert on `(userId, bookId)` → idempotent, ideal for optimistic UI. Fields: omitted = keep (or empty on create), `null` = clear. Unknown or malformed book id → `404 NOT_FOUND` (detected from the FK violation, no extra query).
 - Rating and review are allowed for **any** status (people rate abandoned books), but the UI only prompts for them on `READ`.
 - `review` set to empty string → stored as `null`.
 - Editing a review does **not** clear `isReviewHidden`: it stays hidden until an admin unhides it (prevents edit-to-bypass moderation).

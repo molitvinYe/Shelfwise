@@ -18,7 +18,7 @@ packages/shared/src/
    ├─ users.ts           UpdateProfileInput, ProfileStats, PublicProfile
    ├─ pagination.ts      PageQuery schema, pageOf(itemSchema) factory, Page<T>
    ├─ books.ts           BookSearchQuery, BookListItem, BookPage, BookDetail, SubjectList, ReviewItem, ReviewPage, BookIdParam (later: BookCard, ImportBookInput)
-   ├─ shelves.ts         UpsertShelfInput, UpdateShelfInput, ShelfItem
+   ├─ shelves.ts         UpsertShelfInput, UpdateShelfInput, ShelfEntry, MyShelfEntry, ShelfItem, ShelfPage, ShelfListQuery (later: ProfileStats)
    ├─ collections.ts     Create/UpdateCollectionInput, ReorderInput, CollectionSummary/Detail, PublicCollection
    ├─ admin.ts           AdminReviewItem, AdminUserItem, SetRoleInput, SetReviewHiddenInput
    └─ ai.ts              ChatInput, AiUsageResponse, tool input/output schemas

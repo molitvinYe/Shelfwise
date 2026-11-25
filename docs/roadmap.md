@@ -2,7 +2,7 @@
 
 ~3 weeks part-time (assumed ~15–20 h/week). Each step is a vertical slice that ends in a working, committed state (green CI from step 4 onwards). Order is chosen so that **risky things are verified early** (deploy, SSE through the proxy) and **the demo is presentable at the end of every week**.
 
-Legend: 🔌 = external resource to set up in this step (details in [external-services.md](external-services.md)).
+Legend: 🔌 = external resource to set up in this step (details in [external-services.md](external-services.md)); ✅ = merged into `develop` (release to production and live verification are noted under the step).
 
 ## Overview
 
@@ -15,10 +15,10 @@ Legend: 🔌 = external resource to set up in this step (details in [external-se
 | 4 | ✅ CI pipeline | 1 | 3 | GitHub Actions | 2h |
 | 5 | ✅ Deploy skeleton + SSE spike + pinger | 1 | 4 | Neon, Render, Vercel, UptimeRobot | 3h |
 | 6 | ✅ Auth end to end | 1 | 5 | — | 6h |
-| 7 | Catalog data: fetch + snapshot + seed | 1 | 3 | Open Library API | 3h |
-| 8 | Catalog search + book page | 1→2 | 6, 7 | Open Library covers CDN | 6h |
-| 9 | Import from Open Library | 2 | 8 | Open Library API | 2h |
-| 10 | Shelves, ratings, reviews | 2 | 8 | — | 5h |
+| 7 | ✅ Catalog data: fetch + snapshot + seed | 1 | 3 | Open Library API | 3h |
+| 8 | ✅ Catalog search + book page | 1→2 | 6, 7 | Open Library covers CDN | 6h |
+| 9 | ✅ Import from Open Library | 2 | 8 | Open Library API | 2h |
+| 10 | ✅ Shelves, ratings, reviews | 2 | 8 | — | 5h |
 | 11 | Profile & stats | 2 | 10 | — | 3h |
 | 12 | Collections + public page + OG | 2 | 8 | — | 6h |
 | 13 | Minimal admin | 2 | 10 | — | 3h |

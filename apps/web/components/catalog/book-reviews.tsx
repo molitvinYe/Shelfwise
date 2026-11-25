@@ -49,7 +49,7 @@ export function BookReviews({
       </h2>
       {reviews.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted">
-          No reviews yet. Shelves and reviews are coming soon.
+          No reviews yet. Mark the book as read to write the first one.
         </p>
       ) : (
         <ul className="flex flex-col gap-4">
