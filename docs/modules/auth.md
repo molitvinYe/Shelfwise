@@ -33,7 +33,7 @@ Registration, login, demo login, logout, token refresh with rotation and reuse d
 - **Logout:** revoke all tokens in the presented token's family; clear cookies even if no token.
 - **Cleanup:** on each login, delete that user's tokens expired > 1 day ago.
 - **Demo:** `/auth/demo` finds the user with `isDemo = true` (seeded); 503 if missing.
-- **Seed:** `src/seed/seed-users.ts` creates the demo user (`demo@shelfwise.app`, no password) and the admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD`; idempotent, never overwrites a password; runs on every production start.
+- **Seed:** `src/seed/seed-users.ts` creates the demo user (`demo@shelfwise.app`, no password) and the admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD`; idempotent, never overwrites a password and never promotes an existing account that owns `ADMIN_EMAIL` (registration is open and unverified — it could be pre-claimed; the seed logs a warning instead); runs on every production start.
 - **Guards:** `JwtAuthGuard` registered globally (`APP_GUARD`), reads `sw_access` cookie (fallback: `Authorization: Bearer` for tests / ADR-0002 fallback). `@Public()` skips it. `RolesGuard` + `@Roles(Role.ADMIN)`. `@CurrentUser()` param decorator.
 - **Expired access token** → `401` with code `TOKEN_EXPIRED` (lets the client know to refresh rather than log out).
 

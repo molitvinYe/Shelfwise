@@ -16,6 +16,12 @@ try {
       ? { email: env.ADMIN_EMAIL, password: env.ADMIN_PASSWORD }
       : undefined,
   );
+  if (result.admin === 'conflict') {
+    console.warn(
+      'Seed users: ADMIN_EMAIL belongs to an existing non-admin account; it was NOT promoted. ' +
+        'Use another ADMIN_EMAIL, or delete that account if you own it.',
+    );
+  }
   console.log(
     `Seed users: demo ${result.demo}, admin ${result.admin}` +
       (result.admin === 'skipped'

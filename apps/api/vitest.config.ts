@@ -10,6 +10,8 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
       LOG_LEVEL: 'silent',
+      // Unit tests never connect; the URL only satisfies env validation (CI has no .env).
+      DATABASE_URL: 'postgresql://unit:unit@localhost:1/unit',
       JWT_ACCESS_SECRET: 'test-secret-test-secret-test-secret-0123',
     },
     root: './',

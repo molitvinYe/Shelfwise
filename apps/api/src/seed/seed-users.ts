@@ -8,7 +8,11 @@ export const DEMO_USER = {
 
 export interface SeedUsersResult {
   demo: 'created' | 'exists';
-  admin: 'created' | 'promoted' | 'exists' | 'skipped';
+  /**
+   * `conflict`: a non-admin account already owns ADMIN_EMAIL. It is NOT promoted — registration
+   * is open and unverified, so anyone could have pre-registered that address.
+   */
+  admin: 'created' | 'exists' | 'conflict' | 'skipped';
 }
 
 /**
@@ -43,11 +47,8 @@ export async function seedUsers(
         },
       });
       adminResult = 'created';
-    } else if (existing.role !== 'ADMIN') {
-      await prisma.user.update({ where: { email }, data: { role: 'ADMIN' } });
-      adminResult = 'promoted';
     } else {
-      adminResult = 'exists';
+      adminResult = existing.role === 'ADMIN' ? 'exists' : 'conflict';
     }
   }
 

@@ -83,7 +83,7 @@ The service is described in [`render.yaml`](../render.yaml) (Blueprint): build/s
 | `AUTH_THROTTLE_PER_MINUTE` | no | `10` | per-IP limit on `login` / `register` / `demo` |
 | `SIGNUP_THROTTLE_PER_HOUR` | no | `5` | per-IP limit on `register` |
 | `LOG_LEVEL` | no | `info` | `silent` in tests (set by Vitest config); `pino-pretty` output in development |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | seed only | — | both or neither; the users seed (runs on every start) creates the admin if absent, never overwrites the password. Password ≥ 12 chars |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | seed only | — | both or neither; the users seed (runs on every start) creates the admin if absent, never overwrites the password, never promotes an existing non-admin account with that email (warns instead). Password ≥ 12 chars. Set it **before** the API is publicly reachable with registration |
 | `OPEN_LIBRARY_CONTACT` | yes | email or repo URL | in `User-Agent` |
 | `AI_ENABLED` | no | `true` | kill switch |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | if AI enabled | — | AI Studio key |
