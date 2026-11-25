@@ -61,6 +61,7 @@ Book clubs, reading challenges, publishing user-written works, payments, social 
 - **`develop`** — default branch and integration branch. All work branches start from `develop` and merge back into it via PR.
 - **`main`** — production. Only updated by a release PR `develop → main`; production deploys (Vercel production, Render) build from `main`.
 - Work branches: `feat/<scope>-<topic>`, `fix/...`, `chore/...`, `docs/...` — one roadmap step or task per branch.
+- **Merge methods:** work PRs into `develop` → *Squash and merge*. Release PRs `develop → main` and sync PRs back into `develop` → **Create a merge commit**, never squash (squash leaves a commit on `main` that `develop` doesn't have, and the next release PR is blocked as out of date).
 - Never commit directly to `develop` or `main`; never force-push them. Both are protected: merging requires the green CI check **`Lint, typecheck, test, build`** (`.github/workflows/ci.yml`).
 - Before pushing, run what CI runs: `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build`.
 
