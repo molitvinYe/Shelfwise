@@ -1,0 +1,157 @@
+// Data model — see docs/architecture.md#data-model.
+// Things Prisma can't express (search trigger, CHECK constraints) live in hand-written SQL in the migrations.
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ShelfStatus {
+  WANT
+  READING
+  READ
+}
+
+model User {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  email        String   @unique
+  /// Null for accounts that can't log in with a password (the demo user).
+  passwordHash String?
+  displayName  String
+  role         Role     @default(USER)
+  isDemo       Boolean  @default(false)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  refreshTokens RefreshToken[]
+  shelf         UserBook[]
+  collections   Collection[]
+  aiUsage       AiUsage[]
+}
+
+/// Rotating refresh tokens. Only the SHA-256 hash is stored (docs/adr/0003).
+model RefreshToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @db.Uuid
+  /// All tokens produced by rotating one login share a family; reuse of a revoked token revokes the family.
+  familyId  String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+model Book {
+  id           String                   @id @default(uuid(7)) @db.Uuid
+  /// Open Library work key, e.g. "/works/OL45883W".
+  olKey        String                   @unique
+  title        String
+  authors      String[]
+  description  String?
+  year         Int?
+  /// Lowercased subject names.
+  subjects     String[]
+  /// Open Library language code, e.g. "eng".
+  language     String?
+  coverId      Int?
+  /// Maintained by the `book_search_vector_update` trigger (see the init migration).
+  searchVector Unsupported("tsvector")?
+  createdAt    DateTime                 @default(now()) @db.Timestamptz(3)
+
+  shelvedBy     UserBook[]
+  inCollections CollectionBook[]
+
+  @@index([searchVector], type: Gin)
+  @@index([subjects], type: Gin)
+  @@index([year])
+  @@index([language])
+  @@index([title, id])
+  @@index([createdAt, id])
+}
+
+/// A user's shelf entry for a book: status, rating and review.
+model UserBook {
+  userId         String      @db.Uuid
+  bookId         String      @db.Uuid
+  status         ShelfStatus
+  /// 1–5, enforced by a CHECK constraint.
+  rating         Int?
+  review         String?
+  isReviewHidden Boolean     @default(false)
+  createdAt      DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime    @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@id([userId, bookId])
+  @@index([userId, status, updatedAt])
+  @@index([bookId, updatedAt])
+}
+
+model Collection {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  ownerId     String   @db.Uuid
+  title       String
+  description String?
+  /// Generated once on create and never changed, so shared links stay valid.
+  slug        String   @unique
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  owner User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  books CollectionBook[]
+
+  @@index([ownerId, updatedAt])
+}
+
+model CollectionBook {
+  collectionId String @db.Uuid
+  bookId       String @db.Uuid
+  /// 0-based order; rewritten in one transaction on reorder (≤ 100 books per collection).
+  position     Int
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  book       Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, bookId])
+  @@index([collectionId, position])
+}
+
+/// Per-user daily AI request/token counters (UTC day). See docs/modules/ai.md.
+model AiUsage {
+  userId   String   @db.Uuid
+  date     DateTime @db.Date
+  requests Int      @default(0)
+  tokens   Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, date])
+}
+
+/// Per-IP daily AI counter for the shared demo account. IPs are stored salted-hashed, never raw.
+model AiIpUsage {
+  ipHash   String
+  date     DateTime @db.Date
+  requests Int      @default(0)
+
+  @@id([ipHash, date])
+}

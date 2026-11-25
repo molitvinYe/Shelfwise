@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import type { HealthResponse } from '@shelfwise/shared';
+import type { HealthResponse, ReadinessResponse } from '@shelfwise/shared';
 import { HealthService } from './health.service.js';
 
 @Controller('health')
@@ -10,5 +10,11 @@ export class HealthController {
   @Get()
   check(): HealthResponse {
     return this.healthService.check();
+  }
+
+  /** Readiness probe: 200 when the database answers, 503 otherwise. */
+  @Get('ready')
+  ready(): Promise<ReadinessResponse> {
+    return this.healthService.ready();
   }
 }

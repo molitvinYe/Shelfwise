@@ -18,6 +18,7 @@ const CODE_BY_STATUS: Partial<Record<number, ErrorCode>> = {
   [HttpStatus.CONFLICT]: 'CONFLICT',
   [HttpStatus.TOO_MANY_REQUESTS]: 'RATE_LIMITED',
   [HttpStatus.BAD_GATEWAY]: 'UPSTREAM_UNAVAILABLE',
+  [HttpStatus.SERVICE_UNAVAILABLE]: 'SERVICE_UNAVAILABLE',
 };
 
 /** Turns every thrown error into the shared `ApiErrorBody` shape. Never leaks 5xx internals. */

@@ -20,7 +20,11 @@
     "prepare": "simple-git-hooks",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
-    "db:reset": "docker compose down --volumes && docker compose up -d --wait"
+    "db:reset": "docker compose down --volumes && docker compose up -d --wait",
+    "db:generate": "pnpm --filter @shelfwise/api db:generate",
+    "db:migrate": "pnpm --filter @shelfwise/api db:migrate",
+    "db:migrate:deploy": "pnpm --filter @shelfwise/api db:migrate:deploy",
+    "db:studio": "pnpm --filter @shelfwise/api db:studio"
   },
   "devDependencies": {
     "lint-staged": "^17.6.2",

@@ -10,7 +10,8 @@ Shelves, reviews, collections and AI tools all need stable book ids, joins and f
 - Books live in our `Book` table; `olKey` (e.g. `/works/OL45883W`) is the unique external id.
 - **Seeding:** `scripts/fetch-openlibrary.ts` pulls a few thousand works from popular subjects (Subjects API + per-work details for descriptions), throttled, with a descriptive `User-Agent`, and writes `data/books.snapshot.json` — **committed**. `prisma/seed.ts` reads only the snapshot (deterministic, offline, CI-safe).
 - **Search:** `searchVector tsvector` maintained by a trigger:
-  `setweight(to_tsvector('english', title), 'A') || setweight(to_tsvector('simple', authors joined), 'B') || setweight(to_tsvector('english', coalesce(description,'')), 'C') || setweight(to_tsvector('simple', subjects joined), 'D')`.
+  `setweight(to_tsvector('english', title), 'A') || setweight(to_tsvector('english', authors joined), 'B') || setweight(to_tsvector('english', coalesce(description,'')), 'C') || setweight(to_tsvector('english', subjects joined), 'D')`.
+  One config (`english`) for every field **and** for queries. *Amended at implementation (step 3):* the first draft indexed authors/subjects with `simple`, but a query parsed with `english` is stemmed (`romance` → `romanc`) and then never matches the unstemmed `simple` lexemes — caught by the schema e2e test.
   Query with `websearch_to_tsquery('english', $q)`, rank with `ts_rank_cd`. GIN index.
 - Prisma: `searchVector Unsupported("tsvector")?`; trigger, function and index in a raw SQL migration; search via `$queryRaw` with parameter binding (never string concatenation).
 - **Import on demand:** authenticated users can search Open Library (proxied, 5s timeout) and import a work by `olKey`; upsert is idempotent on `olKey`.

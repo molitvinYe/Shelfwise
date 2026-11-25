@@ -1,28 +1,90 @@
-import type { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import { HealthResponse } from '@shelfwise/shared';
+import {
+  ApiErrorBody,
+  HealthResponse,
+  ReadinessResponse,
+} from '@shelfwise/shared';
 import request from 'supertest';
-import type { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
+import { configureApp } from '../src/app.setup.js';
+import { PrismaService } from '../src/prisma/prisma.service.js';
 
-describe('GET /health (e2e)', () => {
-  let app: INestApplication<App>;
+async function createApp(
+  prismaOverride?: Partial<PrismaService>,
+): Promise<NestExpressApplication> {
+  const builder = Test.createTestingModule({ imports: [AppModule] });
+  if (prismaOverride) {
+    builder.overrideProvider(PrismaService).useValue(prismaOverride);
+  }
+  const moduleRef = await builder.compile();
+  const app = moduleRef.createNestApplication<NestExpressApplication>();
+  configureApp(app);
+  await app.init();
+  return app;
+}
 
-  beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-    app = moduleRef.createNestApplication();
-    await app.init();
+describe('Health (e2e)', () => {
+  describe('with the test database', () => {
+    let app: NestExpressApplication;
+
+    beforeAll(async () => {
+      app = await createApp();
+    });
+
+    afterAll(async () => {
+      await app.close();
+    });
+
+    it('GET /health returns the shared liveness contract', async () => {
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
+
+      expect(HealthResponse.parse(res.body).status).toBe('ok');
+    });
+
+    it('GET /health/ready returns 200 when the database answers', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/health/ready')
+        .expect(200);
+
+      expect(ReadinessResponse.parse(res.body)).toEqual({
+        status: 'ok',
+        db: 'ok',
+      });
+    });
   });
 
-  afterAll(async () => {
-    await app.close();
-  });
+  describe('with the database down', () => {
+    let app: NestExpressApplication;
+    const queryRaw = vi.fn(() =>
+      Promise.reject(new Error('connect ECONNREFUSED')),
+    );
 
-  it('returns 200 with the shared health contract', async () => {
-    const res = await request(app.getHttpServer()).get('/health').expect(200);
+    beforeAll(async () => {
+      app = await createApp({
+        $queryRaw: queryRaw as unknown as PrismaService['$queryRaw'],
+        $disconnect: () => Promise.resolve(),
+      });
+    });
 
-    expect(HealthResponse.parse(res.body).status).toBe('ok');
+    afterAll(async () => {
+      await app.close();
+    });
+
+    it('GET /health still returns 200 and never queries the database', async () => {
+      await request(app.getHttpServer()).get('/health').expect(200);
+
+      expect(queryRaw).not.toHaveBeenCalled();
+    });
+
+    it('GET /health/ready returns 503 SERVICE_UNAVAILABLE', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/health/ready')
+        .expect(503);
+
+      expect(ApiErrorBody.parse(res.body).error.code).toBe(
+        'SERVICE_UNAVAILABLE',
+      );
+    });
   });
 });

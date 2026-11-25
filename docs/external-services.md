@@ -19,8 +19,8 @@ Everything outside this repo the project depends on. All are free tiers. **Free-
 
 ### Neon
 1. Create project (region close to the Render region, e.g. both in EU-Central/Frankfurt or both in US-East).
-2. Copy **two** connection strings: pooled (host contains `-pooler`) → `DATABASE_URL` (append `?sslmode=require&pgbouncer=true` if required by the Prisma version); direct → `DIRECT_URL`.
-3. In `schema.prisma`: `datasource db { url = env("DATABASE_URL") directUrl = env("DIRECT_URL") }`.
+2. Copy **two** connection strings: pooled (host contains `-pooler`) → `DATABASE_URL`; direct → `DIRECT_URL`. Both with `?sslmode=require`.
+3. Prisma 7: the app connects with `DATABASE_URL` through the `@prisma/adapter-pg` driver adapter (`PrismaService`); the CLI (`migrate deploy`, `studio`) reads `DIRECT_URL` from `apps/api/prisma.config.ts`. There is no `url`/`directUrl` in `schema.prisma` any more.
 4. Run migrations and seed **from your machine** once: `pnpm db:migrate:deploy && pnpm db:seed` with prod env.
 
 ### Render
