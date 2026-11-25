@@ -13,3 +13,7 @@ export const BookSort = z.enum([
   'newest',
 ]);
 export type BookSort = z.infer<typeof BookSort>;
+
+/** Shelf a book is on. Mirrors the Prisma `ShelfStatus` enum. */
+export const ShelfStatus = z.enum(['WANT', 'READING', 'READ']);
+export type ShelfStatus = z.infer<typeof ShelfStatus>;
