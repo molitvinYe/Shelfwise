@@ -125,7 +125,7 @@ flowchart LR
 - **Done when:** a book missing from the catalog can be found and imported, then shelved.
 
 ### Step 10. Shelves, ratings, reviews
-- API per [shelves.md](modules/shelves.md); book page `myShelf` and public reviews.
+- API per [shelves.md](modules/shelves.md); book page `myShelf` (a separate authenticated read — the public book page is cached for everyone) and public reviews.
 - Web: `ShelfButton` (optimistic), `RatingStars` (radio group), `ReviewForm`.
 - **Done when:** shelf/rating/review changes appear instantly and survive reload; failure rolls back with a toast.
 

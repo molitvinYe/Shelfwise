@@ -38,7 +38,10 @@ export default function Home() {
         </p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <DemoLoginButton variant="primary" />
-          <Link href="/register" className={buttonClasses('secondary')}>
+          <Link href="/books" className={buttonClasses('secondary')}>
+            Browse the catalog
+          </Link>
+          <Link href="/register" className={buttonClasses('ghost')}>
             Create an account
           </Link>
         </div>

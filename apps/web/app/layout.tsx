@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { SiteHeader } from '@/components/site-header';
+import { getServerEnv } from '@/lib/env';
 import { Providers } from './providers';
 import './globals.css';
 
@@ -15,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getServerEnv().NEXT_PUBLIC_SITE_URL),
   title: {
     default: 'Shelfwise — track your reading, get AI recommendations',
     template: '%s · Shelfwise',
