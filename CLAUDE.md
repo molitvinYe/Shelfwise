@@ -56,6 +56,13 @@ Book clubs, reading challenges, publishing user-written works, payments, social 
 - **No AI attribution anywhere:** no `Co-Authored-By: Claude` trailers, no "Generated with Claude Code" lines or 🤖 markers in commits, PRs, issues, code or docs.
 - Keep `.env.example`, this file and `docs/` up to date when env variables, commands or architecture change.
 
+## Git workflow
+
+- **`develop`** — default branch and integration branch. All work branches start from `develop` and merge back into it via PR.
+- **`main`** — production. Only updated by a release PR `develop → main`; production deploys (Vercel production, Render) build from `main`.
+- Work branches: `feat/<scope>-<topic>`, `fix/...`, `chore/...`, `docs/...` — one roadmap step or task per branch.
+- Never commit directly to `develop` or `main`; never force-push them.
+
 ## Commands
 
 Run from the repo root (pnpm 10 via Corepack: `corepack enable pnpm`).

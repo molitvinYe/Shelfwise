@@ -32,7 +32,7 @@ The project is "done" when all of these are true:
 
 1. **Live demo** on a public URL; "Log in as demo" works in one click.
 2. A cold visitor can: search the catalog → open a book → add it to a shelf → ask the AI advisor for a recommendation → get book cards linking to real catalog pages.
-3. **CI is green** on `main` (lint, typecheck, unit + e2e tests, build).
+3. **CI is green** on `develop` and `main` (lint, typecheck, unit + e2e tests, build).
 4. README explains the system in under 5 minutes: screenshots, chat GIF, Mermaid diagram, "Decisions & trade-offs".
 5. Local start is one documented command sequence.
 6. Hosting cost is $0/month; the LLM cannot generate spend (free tier, no billing attached) and the app enforces its own quotas.

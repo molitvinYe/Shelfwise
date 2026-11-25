@@ -85,13 +85,13 @@ flowchart LR
 
 ### Step 4. CI pipeline
 - 🔌 GitHub Actions workflow per [infra.md § CI](modules/infra.md#ci-github-actions--githubworkflowsciyml) with a Postgres service.
-- Branch protection on `main` requiring CI; Dependabot config.
+- Branch protection on `develop` and `main` requiring CI; Dependabot config (PRs target `develop`).
 - **Done when:** a PR shows green lint → typecheck → test → e2e → build.
 
 ### Step 5. Deploy skeleton + SSE spike + pinger
 - 🔌 Neon: create project, get pooled + direct URLs, run `prisma migrate deploy` against it.
-- 🔌 Render: web service for api, env vars, health check path, auto-deploy.
-- 🔌 Vercel: project with Root Directory `apps/web`, `API_ORIGIN` = Render URL, `NEXT_PUBLIC_SITE_URL`.
+- 🔌 Render: web service for api, env vars, health check path, auto-deploy from `main`.
+- 🔌 Vercel: project with Root Directory `apps/web`, production branch `main`, `API_ORIGIN` = Render URL, `NEXT_PUBLIC_SITE_URL`.
 - **SSE spike:** enable `/health/stream` temporarily; open `https://<web>.vercel.app/api/health/stream` and confirm events arrive **incrementally** for the full 60s. Record the result in [ADR-0002](adr/0002-same-origin-api-proxy.md) (if it fails → apply the fallback and write ADR-0008).
 - 🔌 UptimeRobot monitor on `https://<api>.onrender.com/health`, 5–10 min interval.
 - **Done when:** live web URL renders and reaches the API through `/api/*`; SSE verdict recorded; monitor is green.
