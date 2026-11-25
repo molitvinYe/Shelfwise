@@ -6,12 +6,14 @@ import { buildLoggerOptions } from './common/logging/logger.options.js';
 import { createValidationPipe } from './common/pipes/validation.pipe.js';
 import { getEnv } from './config/env.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { PrismaModule } from './prisma/prisma.module.js';
 
 @Module({
   imports: [
     LoggerModule.forRootAsync({
       useFactory: () => buildLoggerOptions(getEnv()),
     }),
+    PrismaModule,
     HealthModule,
   ],
   providers: [

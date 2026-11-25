@@ -28,6 +28,6 @@ Nothing.
 - e2e: `/health` returns 200 without a DB connection (start app with Prisma mocked/unreachable); `/health/ready` returns 503 when DB is down.
 
 ## Implementation checklist
-1. `HealthController` with `/health` and `/health/ready` (step 3).
+1. ✅ `HealthController` with `/health` and `/health/ready` (step 3).
 2. `/health/stream` behind `ENABLE_DEBUG_ROUTES` (step 5); remove or keep disabled after the spike.
 3. Configure the pinger (see [external-services.md](../external-services.md#uptime-pinger)).

@@ -79,7 +79,12 @@ Run from the repo root (pnpm 10 via Corepack: `corepack enable pnpm`).
 | `pnpm db:up` / `pnpm db:down` / `pnpm db:reset` | local Postgres via Docker Compose: dev `:5432`, test `:5433` (in-memory); reset wipes dev data |
 | `pnpm --filter @shelfwise/<pkg> <script>` | run a script in one package |
 
-_Added in later steps: `db:migrate`, `db:seed`, `data:fetch` (steps 3–7)._
+| `pnpm db:migrate` | create/apply a migration in dev (`prisma migrate dev`; add `--create-only` via the api package to hand-edit SQL first) |
+| `pnpm db:migrate:deploy` | apply pending migrations (prod/CI) |
+| `pnpm db:generate` | regenerate Prisma Client (also runs on `pnpm install`) |
+| `pnpm db:studio` | Prisma Studio |
+
+_Added in later steps: `db:seed`, `data:fetch` (step 7)._
 
 Pre-commit hook (`simple-git-hooks` + `lint-staged`): Prettier on staged files, then lint of the touched app. Skip once with `SKIP_SIMPLE_GIT_HOOKS=1 git commit ...` only when really needed.
 
@@ -94,4 +99,7 @@ Pre-commit hook (`simple-git-hooks` + `lint-staged`): Prettier on staged files, 
 - **API errors:** throw `AppException(status, code, message, details?)` from `apps/api/src/common/errors`; the global `AllExceptionsFilter` renders the shared `ApiErrorBody`. Unexpected errors become `500 INTERNAL_ERROR` without internals.
 - **Logging:** `nestjs-pino`; inject `PinoLogger` (`@InjectPinoLogger(Context.name)`). Every response carries `x-request-id`.
 - **App setup shared with e2e:** `configureApp()` in `apps/api/src/app.setup.ts` (helmet, trust proxy); e2e tests must call it.
+- **Prisma 7:** client is generated into `apps/api/src/generated/prisma` (gitignored) — import `PrismaClient`/types from `../generated/prisma/client.js`, not `@prisma/client`. Inject `PrismaService` (global `PrismaModule`). The app uses the pooled `DATABASE_URL` via `@prisma/adapter-pg`; the CLI uses `DIRECT_URL` from `prisma.config.ts`.
+- **Hand-written SQL in migrations:** the `Book.searchVector` trigger and CHECK constraints live in `prisma/migrations/*_init/migration.sql`; Prisma doesn't diff them. Full-text queries must use `websearch_to_tsquery('english', …)` — the same config as the trigger.
+- **e2e tests use the real test DB** (`db-test`, `:5433`): `test/global-setup.ts` runs `migrate deploy`; files run sequentially; use `createTestPrisma()` / `resetDatabase()` from `test/db.ts`.
 - `apps/api/AGENTS.md` holds NestJS 12 framework notes from the generator.
