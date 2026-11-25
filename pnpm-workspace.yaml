@@ -5,3 +5,7 @@ packages:
 # pnpm blocks dependency install scripts by default; list the ones allowed to run.
 onlyBuiltDependencies:
   - '@nestjs/core'
+
+# Its postinstall is redundant: the root `prepare` script installs the git hooks.
+ignoredBuiltDependencies:
+  - simple-git-hooks

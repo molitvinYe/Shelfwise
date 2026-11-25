@@ -20,20 +20,21 @@ Next.js (App Router) · React · TypeScript · Tailwind · TanStack Query · Nes
 
 ## Local development
 
-Prerequisites: Node 24 (`.nvmrc`), Corepack (ships with Node).
+Prerequisites: Node 24 (`.nvmrc`), Corepack (ships with Node), a Docker runtime with Compose v2 (Docker Desktop, OrbStack or Colima).
 
 ```bash
 corepack enable pnpm                        # once per machine: puts pnpm 10 on PATH
-pnpm install
+pnpm install                                # also installs the pre-commit hook
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
+pnpm db:up                                  # Postgres for dev (:5432) and tests (:5433)
 pnpm dev
 ```
 
 - Web: http://localhost:3000 — landing page with a live "System status" card
 - API: http://localhost:4000/health (also reachable through the web proxy at http://localhost:3000/api/health)
 
-Postgres via Docker Compose arrives in roadmap step 2.
+The database is not used by the app yet — Prisma arrives in roadmap step 3.
 
 | Command | What it does |
 |---------|--------------|
@@ -44,3 +45,4 @@ Postgres via Docker Compose arrives in roadmap step 2.
 | `pnpm test` | unit tests (Vitest) |
 | `pnpm test:e2e` | API e2e tests (Vitest + Supertest) |
 | `pnpm format` / `pnpm format:check` | Prettier |
+| `pnpm db:up` / `db:down` / `db:reset` | start / stop / wipe local Postgres (Docker Compose) |
