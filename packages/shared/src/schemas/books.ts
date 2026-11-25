@@ -94,3 +94,41 @@ export type ReviewPage = z.infer<typeof ReviewPage>;
 
 /** `:id` route param. */
 export const BookIdParam = z.uuid();
+
+/** `GET /books/external-search?q=` — searching Open Library for books missing from the catalog. */
+export const ExternalSearchQuery = z.object({
+  q: z
+    .string()
+    .trim()
+    .min(2, 'Type at least 2 characters')
+    .max(SEARCH_QUERY_MAX),
+});
+export type ExternalSearchQuery = z.infer<typeof ExternalSearchQuery>;
+
+export const OL_WORK_KEY = /^\/works\/OL\d+W$/;
+
+/** An Open Library work; `bookId` is set when it is already in our catalog. */
+export const ExternalBook = z.object({
+  olKey: z.string().regex(OL_WORK_KEY),
+  title: z.string(),
+  authors: z.array(z.string()),
+  year: z.number().int().nullable(),
+  coverId: z.number().int().nullable(),
+  bookId: z.uuid().nullable(),
+});
+export type ExternalBook = z.infer<typeof ExternalBook>;
+
+export const ExternalSearchResult = z.object({ items: z.array(ExternalBook) });
+export type ExternalSearchResult = z.infer<typeof ExternalSearchResult>;
+
+/** `POST /books/import`. */
+export const ImportBookInput = z.object({
+  olKey: z
+    .string()
+    .trim()
+    .regex(
+      OL_WORK_KEY,
+      'Expected an Open Library work key like /works/OL45883W',
+    ),
+});
+export type ImportBookInput = z.infer<typeof ImportBookInput>;

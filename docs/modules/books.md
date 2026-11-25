@@ -16,8 +16,8 @@ The catalog: seed data, full-text search with filters/sort/pagination, book deta
 | GET | `/books/subjects` | public | — | `{ items: [{ subject, count }] }`, most common first (filter UI). Not cached in the API (a GROUP BY over a few thousand rows); the web caches it for hours |
 | GET | `/books/:id` | public | — | `BookDetail` = book + `{ ratingAverage, ratingCount }`. Unknown **or malformed** id → `404 NOT_FOUND` |
 | GET | `/books/:id/reviews` | public | limit, cursor | `Page<ReviewItem>` (non-hidden reviews, newest first) |
-| GET | `/books/external-search` | access, throttled | q | Open Library search results (`olKey, title, authors, year, coverId, alreadyImported`) |
-| POST | `/books/import` | access, throttled | `{ olKey }` | `201 BookDetail` (or `200` if already present) |
+| GET | `/books/external-search` | access, per-user limit | `q` (2–200 chars) | `{ items: ExternalBook[] }` — up to 20 Open Library works (`olKey, title, authors, year, coverId, bookId`); `bookId` is set when the work is already in the catalog |
+| POST | `/books/import` | access, per-user limit | `{ olKey }` | `201 BookDetail` when imported now, `200` when already present (no Open Library call, not counted against the limit) |
 
 ## Business rules
 - **Search query builder** (`book-search.query.ts`, pure, unit-tested): one `Prisma.sql` statement with every value bound. With `q`, default sort = relevance, else `title`. `sort=relevance` without `q` → 400 (validated in the shared schema).
@@ -32,7 +32,9 @@ The catalog: seed data, full-text search with filters/sort/pagination, book deta
   - **Mapping** (`open-library.mapper.ts`, shared with import in step 9): title of the best English edition when there is one (`lang=en` → `editions`), else the work title; up to 5 unique authors; `language` = `eng` if any English edition, else the first; description from string or `{ value }`, without Open Library's `----------` source footer and markdown links, ≤ 2000 chars.
   - **Subjects** = the curated categories the book was fetched for (merged across categories). Open Library's own tags are too noisy for popular works; alias matching (`toCategories` without a category) is only for import on demand.
   - `pnpm db:seed` → `src/seed/run-seed.ts`: users (step 6), then books: reads the existing `olKey`s and inserts only missing ones in batches of 500 (`createMany skipDuplicates`). Never updates existing rows, so books imported or edited later are safe. Runs on every production start (docs/modules/infra.md). Step 17 adds demo shelves/collections.
-- **Import on demand:** fetch `/works/{olKey}.json` (+ author names), map with the same mapper as the fetch script (shared function), upsert by `olKey`. Upstream failure → `502 UPSTREAM_UNAVAILABLE`. Throttle: 10 imports/hour per user; demo user: 3/hour.
+- **Import on demand** (`book-import.service.ts`): two parallel Open Library calls — `search.json?q=key:{olKey}&lang=en` (same fields as the snapshot, so the same `mapSearchDoc` applies, including the English edition title) and `/works/{olKey}.json` (description). Mapping is lenient here (`requireCoverAndYear: false`): the user asked for that book. Subjects come from alias matching on Open Library tags (may be empty). Insert by `olKey`; a concurrent duplicate (P2002) returns the existing row. Unknown work → `404 NOT_FOUND`; Open Library error/timeout (5 s, 1 retry) → `502 UPSTREAM_UNAVAILABLE`.
+- **Limits** (in-memory fixed window per user id, `common/rate-limit`; `@nestjs/throttler` is per IP, these are per account): external search `EXTERNAL_SEARCH_PER_MINUTE` (20), imports `IMPORT_PER_HOUR` (10), the shared demo account `IMPORT_PER_HOUR_DEMO` (3). Exceeded → `429 RATE_LIMITED` with `details.retryAfterSeconds`.
+- **Descriptions** are plain text: the mapper drops Open Library's source footer, markdown links (inline and reference), emphasis, HTML tags and `_____` separators. It is idempotent, so the committed snapshot was cleaned with the same function.
 - **Covers:** `coverId` → `https://covers.openlibrary.org/b/id/{coverId}-M.jpg` (L for book page). No cover → placeholder.
 
 ## Validation
@@ -48,7 +50,7 @@ Catalog `/books`, book page `/books/[id]`, import dialog — see [web.md](web.md
 
 ## Tests
 - Unit: query builder (each filter, sort+cursor combinations), cursor encode/decode, Open Library mapper (missing fields, description as string vs `{ value }` object).
-- e2e (seeded fixture of ~20 books): search ranks title match above description match; filters combine; pagination returns no duplicates across pages; import is idempotent (Open Library mocked with `nock` or an injected HTTP client).
+- e2e (seeded fixture of ~20 books): search ranks title match above description match; filters combine; pagination returns no duplicates across pages. Import (`books-import.e2e-spec.ts`, `OpenLibraryClient` replaced via `overrideProvider`): auth required, lenient search mapping, 201 then idempotent 200 without upstream calls, 404, 502, per-user and demo limits.
 
 ## Implementation checklist
 1. Prisma `Book` model + raw SQL migration: trigger function, trigger, GIN indexes (step 3).
@@ -56,4 +58,4 @@ Catalog `/books`, book page `/books/[id]`, import dialog — see [web.md](web.md
 3. `data:fetch` script → commit snapshot; `db:seed` (step 7) ✅.
 4. Search query builder + `GET /books` + `GET /books/subjects` (step 8) ✅.
 5. `GET /books/:id`, `GET /books/:id/reviews` (step 8; reviews list fills up in step 10) ✅.
-6. External search + import (step 9).
+6. External search + import (step 9) ✅.

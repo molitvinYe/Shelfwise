@@ -11,6 +11,7 @@ import {
   CatalogFiltersSkeleton,
 } from '@/components/catalog/catalog-filters';
 import { LoadMoreBooks } from '@/components/catalog/load-more-books';
+import { buttonClasses } from '@/components/ui/button';
 import { FormAlert } from '@/components/ui/form-alert';
 import { getSubjects, searchBooks } from '@/lib/api/catalog';
 import { parseCatalogParams } from '@/lib/catalog/search-params';
@@ -84,14 +85,19 @@ async function Catalog({
               No books match{params.filters.q && <> “{params.filters.q}”</>}.
             </p>
             <p className="mt-1 text-sm text-muted">
-              Try fewer filters or another spelling.{' '}
+              Try fewer filters or another spelling.
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-3">
               <Link
-                href="/books"
-                className="text-accent underline-offset-4 hover:underline"
+                href={importHref(params.filters.q)}
+                className={buttonClasses('primary')}
               >
+                Import from Open Library
+              </Link>
+              <Link href="/books" className={buttonClasses('secondary')}>
                 Browse all books
               </Link>
-            </p>
+            </div>
           </div>
         ) : (
           <>
@@ -107,9 +113,22 @@ async function Catalog({
                 initialCursor={page.nextCursor}
               />
             )}
+            <p className="text-center text-sm text-muted">
+              Missing a book?{' '}
+              <Link
+                href={importHref(params.filters.q)}
+                className="text-accent underline-offset-4 hover:underline"
+              >
+                Import it from Open Library
+              </Link>
+            </p>
           </>
         )}
       </section>
     </>
   );
+}
+
+function importHref(q: string | undefined): string {
+  return q ? `/books/import?q=${encodeURIComponent(q)}` : '/books/import';
 }

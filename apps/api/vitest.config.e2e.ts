@@ -27,6 +27,10 @@ export default defineConfig({
       ENABLE_DEBUG_ROUTES: 'true',
       // Most suites log in many times from one IP; auth-throttle.e2e-spec.ts tests the real limits.
       AUTH_THROTTLE_PER_MINUTE: '1000',
+      // Small, so the import limit is reachable in a test.
+      IMPORT_PER_HOUR: '3',
+      IMPORT_PER_HOUR_DEMO: '1',
+      EXTERNAL_SEARCH_PER_MINUTE: '1000',
       SIGNUP_THROTTLE_PER_HOUR: '1000',
       DATABASE_URL: TEST_DATABASE_URL,
       DIRECT_URL: TEST_DATABASE_URL,

@@ -121,7 +121,7 @@ flowchart LR
 ## Week 2 — the product around the catalog
 
 ### Step 9. Import from Open Library
-- `GET /books/external-search`, `POST /books/import` (auth, throttled, idempotent); web import dialog from the catalog empty state.
+- `GET /books/external-search`, `POST /books/import` (auth, per-user limits, idempotent); web import page `/books/import` linked from the catalog empty state and results.
 - **Done when:** a book missing from the catalog can be found and imported, then shelved.
 
 ### Step 10. Shelves, ratings, reviews
