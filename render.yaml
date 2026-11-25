@@ -13,7 +13,7 @@ services:
     autoDeployTrigger: checksPass
     # --prod=false: NODE_ENV=production would otherwise skip devDependencies (Nest CLI, TypeScript, Prisma CLI).
     buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter "@shelfwise/api..." build
-    # Free plan has no pre-deploy hook or shell, so migrations and the users seed run on start (both idempotent).
+    # Free plan has no pre-deploy hook or shell, so migrations and the seed (users + catalog snapshot) run on start (idempotent).
     startCommand: pnpm --filter @shelfwise/api start:prod
     healthCheckPath: /health
     buildFilter:

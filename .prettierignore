@@ -6,3 +6,4 @@ pnpm-lock.yaml
 apps/*/AGENTS.md
 **/*.md
 apps/api/src/generated
+apps/api/data

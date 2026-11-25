@@ -26,8 +26,10 @@ The catalog: seed data, full-text search with filters/sort/pagination, book deta
 - **Rating summary:** `AVG(rating), COUNT(rating)` over `UserBook` where `rating IS NOT NULL` (index on `bookId`). Not denormalised — catalog is small; revisit only if it shows up as slow.
 - **`myShelf`:** included when a user is authenticated (optional auth on this route).
 - **Seed pipeline:**
-  - `pnpm --filter @shelfwise/api data:fetch` → `scripts/fetch-openlibrary.ts`: for ~30 popular subjects fetch `https://openlibrary.org/subjects/{subject}.json?limit=…`, then `/works/{key}.json` for descriptions; concurrency 2–3, delay between requests, `User-Agent: Shelfwise/0.1 (${OPEN_LIBRARY_CONTACT})`; dedupe by `olKey`; target 3–5k books; write `data/books.snapshot.json`.
-  - `pnpm --filter @shelfwise/api db:seed` → upsert books from snapshot in batches (`createMany skipDuplicates`), then seed admin + demo users (step 17 adds demo shelves/collections).
+  - `pnpm data:fetch` → `apps/api/scripts/fetch-openlibrary.ts` (tsx): for each of the 32 curated categories (`open-library/categories.ts`) fetch the 150 most-read works from `search.json?q=subject:"…"&sort=readinglog&lang=en`, keep only works with title, author, year and cover; dedupe by `olKey`; then `/works/{key}.json` for descriptions (2 workers, ~3 req/s overall). `User-Agent: Shelfwise/0.2 (${OPEN_LIBRARY_CONTACT})`. Writes `apps/api/data/books.snapshot.json` (sorted by `olKey`, stable diffs) — committed.
+  - **Mapping** (`open-library.mapper.ts`, shared with import in step 9): title of the best English edition when there is one (`lang=en` → `editions`), else the work title; up to 5 unique authors; `language` = `eng` if any English edition, else the first; description from string or `{ value }`, without Open Library's `----------` source footer and markdown links, ≤ 2000 chars.
+  - **Subjects** = the curated categories the book was fetched for (merged across categories). Open Library's own tags are too noisy for popular works; alias matching (`toCategories` without a category) is only for import on demand.
+  - `pnpm db:seed` → `src/seed/run-seed.ts`: users (step 6), then books: reads the existing `olKey`s and inserts only missing ones in batches of 500 (`createMany skipDuplicates`). Never updates existing rows, so books imported or edited later are safe. Runs on every production start (docs/modules/infra.md). Step 17 adds demo shelves/collections.
 - **Import on demand:** fetch `/works/{olKey}.json` (+ author names), map with the same mapper as the fetch script (shared function), upsert by `olKey`. Upstream failure → `502 UPSTREAM_UNAVAILABLE`. Throttle: 10 imports/hour per user; demo user: 3/hour.
 - **Covers:** `coverId` → `https://covers.openlibrary.org/b/id/{coverId}-M.jpg` (L for book page). No cover → placeholder.
 
@@ -48,8 +50,8 @@ Catalog `/books`, book page `/books/[id]`, import dialog — see [web.md](web.md
 
 ## Implementation checklist
 1. Prisma `Book` model + raw SQL migration: trigger function, trigger, GIN indexes (step 3).
-2. Open Library client (fetch with timeout + retry) and mapper (step 7).
-3. `data:fetch` script → commit snapshot; `db:seed` (step 7).
+2. Open Library client (fetch with timeout + retry) and mapper (step 7) ✅.
+3. `data:fetch` script → commit snapshot; `db:seed` (step 7) ✅.
 4. Search query builder + `GET /books` + `GET /books/subjects` (step 8).
 5. `GET /books/:id`, `GET /books/:id/reviews` (step 8; reviews list fills up in step 10).
 6. External search + import (step 9).

@@ -14,7 +14,7 @@ Legend: 🔌 = external resource to set up in this step (details in [external-se
 | 3 | ✅ Prisma schema, migrations, health | 1 | 2 | — | 3h |
 | 4 | ✅ CI pipeline | 1 | 3 | GitHub Actions | 2h |
 | 5 | ✅ Deploy skeleton + SSE spike + pinger | 1 | 4 | Neon, Render, Vercel, UptimeRobot | 3h |
-| 6 | Auth end to end | 1 | 5 | — | 6h |
+| 6 | ✅ Auth end to end | 1 | 5 | — | 6h |
 | 7 | Catalog data: fetch + snapshot + seed | 1 | 3 | Open Library API | 3h |
 | 8 | Catalog search + book page | 1→2 | 6, 7 | Open Library covers CDN | 6h |
 | 9 | Import from Open Library | 2 | 8 | Open Library API | 2h |
@@ -103,11 +103,13 @@ flowchart LR
 - Seed: admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD`, demo user (`isDemo`).
 - e2e tests for all auth flows (including refresh reuse detection).
 - **Done when:** on the live URL: register, login, demo login, page reload keeps session, logout works; tampered/reused refresh token is rejected.
+- ✅ Released in v0.2.0 and verified on the live URL (2026-11-25).
+- ⏳ **Open:** confirm client-IP resolution for rate limits on production — set `ENABLE_DEBUG_ROUTES=true` on Render, compare `GET /api/health/client-ip` (through Vercel) with the real client IP, adjust `TRUST_PROXY_HOPS` if it shows a Vercel IP, then set the flag back to `false`.
 
 ### Step 7. Catalog data: fetch + snapshot + seed
 - 🔌 Open Library API (no key; set a descriptive `User-Agent` with contact).
-- `scripts/fetch-openlibrary.ts` → `data/books.snapshot.json` (3–5k books, ~30 subjects) — commit it.
-- `db:seed` upserts books from the snapshot; run against Neon once.
+- `scripts/fetch-openlibrary.ts` → `data/books.snapshot.json` (~2–3k books, 32 curated subjects) — commit it.
+- `db:seed` inserts missing books from the snapshot; runs on every production start (no shell on Render free; idempotent and insert-only).
 - **Done when:** local and prod DB contain the catalog; re-running the seed is idempotent.
 
 ### Step 8. Catalog search + book page
