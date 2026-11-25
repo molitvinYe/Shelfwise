@@ -75,7 +75,7 @@ Free-tier limits and their consequences are listed in [external-services.md](ext
 |------|--------|------------|
 | Render free tier sleeps after inactivity → 30–60s cold start | Recruiter sees a hanging page | Uptime ping on `/health` every ~10 min; liveness endpoint does not touch the DB |
 | Neon compute suspends when idle | First DB query after idle is slower (sub-second to a few seconds) | Accept; mention in trade-offs; ping does **not** wake the DB on purpose (saves compute hours) |
-| SSE streaming breaks or times out through the Vercel → Render rewrite | AI chat unusable via one origin | Spike in roadmap step 5, before any AI work. Fallback: call the API origin directly for the chat endpoint only, with CORS + `SameSite=None` cookie scoped to that path ([ADR-0002](adr/0002-same-origin-api-proxy.md)) |
+| SSE streaming breaks or times out through the Vercel → Render rewrite | AI chat unusable via one origin | ✅ Verified in production (step 5): 60 s stream through the Vercel rewrite arrives event by event ([ADR-0002](adr/0002-same-origin-api-proxy.md#verification-roadmap-step-5-2026-11-25)). Fallback kept documented in the ADR |
 | Gemini free tier rate limits / quota changes | Chat returns errors under load | App-level global daily cap below provider quota; graceful "advisor is resting" state; model name in env var |
 | Free-tier Gemini data may be used by Google to improve products | Privacy of demo prompts | Acceptable for a demo; disclose in the chat UI footer; never send emails or other PII to the model |
 | Shared demo account abused (spam reviews, AI quota exhaustion) | Ugly public pages, chat blocked for everyone | Separate demo AI quota + per-IP limit; admin can hide reviews; optional nightly demo reset |

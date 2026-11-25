@@ -4,7 +4,9 @@
 
 Track what you read, rate and review books, curate public collections — and ask an AI reading advisor what to read next, grounded in a real catalog.
 
-> **Status:** monorepo scaffold (roadmap step 1). Landing page + API health check run locally — features land step by step, see the [roadmap](docs/roadmap.md).
+> **Status:** deployable skeleton (roadmap steps 1–5) — features land step by step, see the [roadmap](docs/roadmap.md).
+>
+> **Live:** https://shelfwise-khaki.vercel.app · API health: https://shelfwise-api-mhic.onrender.com/health (free tier — the first request after idle can take up to a minute)
 > Screenshots, live demo link and a chat GIF will be added in roadmap step 19.
 
 ## Stack
@@ -45,7 +47,7 @@ pnpm dev
 | `pnpm build` | builds all packages in dependency order |
 | `pnpm lint` | ESLint (web), oxlint (api) |
 | `pnpm typecheck` | `tsc --noEmit` in every package |
-| `pnpm test` | unit tests (Vitest) |
+| `pnpm test` | unit tests (Vitest, api + web) |
 | `pnpm test:e2e` | API e2e tests (Vitest + Supertest) |
 | `pnpm format` / `pnpm format:check` | Prettier |
 | `pnpm db:up` / `db:down` / `db:reset` | start / stop / wipe local Postgres (Docker Compose) |

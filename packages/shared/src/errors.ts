@@ -11,6 +11,11 @@ export const ErrorCode = z.enum([
   'UPSTREAM_UNAVAILABLE',
   'SERVICE_UNAVAILABLE',
   'INTERNAL_ERROR',
+  // auth
+  'EMAIL_TAKEN',
+  'INVALID_CREDENTIALS',
+  /** Access token expired: the client should call `/auth/refresh` once and retry. */
+  'TOKEN_EXPIRED',
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
 

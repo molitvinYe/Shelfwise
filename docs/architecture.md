@@ -210,7 +210,7 @@ sequenceDiagram
   W->>A: (rewrite) POST /auth/login
   A->>D: find user, argon2.verify
   A->>D: insert RefreshToken(hash, familyId)
-  A-->>B: 200 + Set-Cookie access (15m), refresh (7d, Path=/api/auth)
+  A-->>B: 200 + Set-Cookie access (15m), refresh (7d), both Path=/ httpOnly
 
   B->>W: GET /api/shelves (cookie: access)
   W->>A: (rewrite)
@@ -226,7 +226,7 @@ sequenceDiagram
   B->>W: retry GET /api/shelves
 ```
 
-For Server Components, `middleware.ts` performs the refresh before rendering if the access cookie is missing/expired but a refresh cookie exists (details in [modules/web.md](modules/web.md)).
+For Server Components, `proxy.ts` performs the refresh before rendering if the access cookie is missing/expired but a refresh cookie exists; parallel requests with the same refresh cookie are covered by a 10 s reuse interval (details in [modules/web.md](modules/web.md), [ADR-0003](adr/0003-auth-jwt-refresh-rotation.md)).
 
 ### AI advisor turn
 

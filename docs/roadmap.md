@@ -13,7 +13,7 @@ Legend: 🔌 = external resource to set up in this step (details in [external-se
 | 2 | ✅ Local infra & config | 1 | 1 | Docker | 2h |
 | 3 | ✅ Prisma schema, migrations, health | 1 | 2 | — | 3h |
 | 4 | ✅ CI pipeline | 1 | 3 | GitHub Actions | 2h |
-| 5 | Deploy skeleton + SSE spike + pinger | 1 | 4 | Neon, Render, Vercel, UptimeRobot | 3h |
+| 5 | ✅ Deploy skeleton + SSE spike + pinger | 1 | 4 | Neon, Render, Vercel, UptimeRobot | 3h |
 | 6 | Auth end to end | 1 | 5 | — | 6h |
 | 7 | Catalog data: fetch + snapshot + seed | 1 | 3 | Open Library API | 3h |
 | 8 | Catalog search + book page | 1→2 | 6, 7 | Open Library covers CDN | 6h |

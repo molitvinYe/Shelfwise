@@ -23,7 +23,11 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
       LOG_LEVEL: 'silent',
+      JWT_ACCESS_SECRET: 'test-secret-test-secret-test-secret-0123',
       ENABLE_DEBUG_ROUTES: 'true',
+      // Most suites log in many times from one IP; auth-throttle.e2e-spec.ts tests the real limits.
+      AUTH_THROTTLE_PER_MINUTE: '1000',
+      SIGNUP_THROTTLE_PER_HOUR: '1000',
       DATABASE_URL: TEST_DATABASE_URL,
       DIRECT_URL: TEST_DATABASE_URL,
     },

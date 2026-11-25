@@ -30,12 +30,16 @@ The UI. Public pages are Server Components (SEO, fast first paint); interactive 
 - After mutations that affect server-rendered pages, call `router.refresh()`.
 
 ## Auth on the web
-- `proxy.ts` (Next 16 name for middleware), matcher on `/me`, `/collections/:path*`, `/advisor`, `/admin/:path*`, and pages that show `myShelf`:
-  1. If `sw_access` is present and not expired (decode `exp` only — verification happens in the API) → continue.
-  2. Else if `sw_refresh` is present → call `${API_ORIGIN}/auth/refresh` server-side forwarding the cookie, copy `Set-Cookie` onto the response, continue.
-  3. Else on protected routes → redirect to `/login?next=...`.
+- `proxy.ts` (Next 16 name for middleware) runs on **every page** (matcher excludes `/api`, `_next`, static files), because every page renders the header with the session:
+  1. If `sw_access` is present and not expiring within 10 s (decode `exp` only with `jose` — verification happens in the API) → continue.
+  2. Else if `sw_refresh` is present → `POST ${API_ORIGIN}/auth/refresh` server-side with that cookie; copy the `Set-Cookie` lines onto the browser response **and** onto the forwarded request cookies, so Server Components of this render already see the new access token. On a network error the cookies are left alone.
+  3. No session on a protected prefix (`PROTECTED_PREFIXES`, now `/me`) → redirect to `/login?next=…`; a session on `/login` / `/register` → redirect to `safeNext(next)`.
+  - Parallel prefetches can all carry the same refresh cookie; the API's 10 s reuse interval (max 10 grace successors per token) makes that safe (docs/adr/0003).
+- `lib/api/server.ts` → `getCurrentUser()`: `PublicUser | null`, reads `sw_access` via `cookies()`, calls `/auth/me` server-to-server, `React.cache` per request; throws when the API is down (callers decide: the header falls back to the logged-out nav). Pages re-check it — `proxy.ts` is only a shortcut.
+- With Cache Components every session read sits inside `<Suspense>` (header `UserNav`, `/me` greeting); the rest of the page stays in the static shell.
+- `?next=` is passed through `safeNext()` (same-origin paths only) — no open redirects.
+- Session changes on the client (login, register, demo, logout) → `router.replace(target)` + `router.refresh()` (`useAuthRedirect`), so Server Components re-render with the new cookies.
 - Role check for `/admin` in the admin layout (RSC calls `/auth/me`); real enforcement is the API.
-- `getCurrentUser()` server helper (cached per request with `React.cache`).
 
 ## AI chat UI
 - `useChat` from `@ai-sdk/react` with transport pointing to `/api/ai/chat`.
@@ -56,13 +60,14 @@ The UI. Public pages are Server Components (SEO, fast first paint); interactive 
 `API_ORIGIN` (server-only; used in rewrites, middleware and RSC fetches), `NEXT_PUBLIC_SITE_URL` (canonical URLs, OG). Validated with Zod in `lib/env.ts`.
 
 ## Tests
+- Vitest (`apps/web/vitest.config.ts`, node environment, `*.test.ts`): single-flight refresh in `lib/api/client.ts`, `safeNext`.
 - Component tests only where logic exists: optimistic `ShelfButton` rollback, refresh single-flight in the client fetcher, reorder list keyboard behaviour.
 - Optional Playwright smoke (step 19): demo login → search → add to shelf → open public collection.
 
 ## Implementation checklist
 1. `create-next-app` (TS, Tailwind, App Router, ESLint), strict TS, rewrites, env validation (step 1) ✅.
-2. Layout, nav, UI primitives, Providers (step 1/6).
-3. Auth pages, middleware, fetchers, landing with demo button (step 6).
+2. Layout, nav, UI primitives (`Button`, `TextField`, `FormAlert`), Providers (step 1/6) ✅.
+3. Auth pages, `proxy.ts`, fetchers, landing with demo button, `/me` placeholder (step 6) ✅.
 4. Catalog + book page (step 8), import dialog (step 9).
 5. Shelf controls, profile pages (steps 10–11).
 6. Collections pages + OG image (step 12).

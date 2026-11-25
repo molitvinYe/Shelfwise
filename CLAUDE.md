@@ -61,6 +61,7 @@ Book clubs, reading challenges, publishing user-written works, payments, social 
 - **`develop`** — default branch and integration branch. All work branches start from `develop` and merge back into it via PR.
 - **`main`** — production. Only updated by a release PR `develop → main`; production deploys (Vercel production, Render) build from `main`.
 - Work branches: `feat/<scope>-<topic>`, `fix/...`, `chore/...`, `docs/...` — one roadmap step or task per branch.
+- **Merge methods:** work PRs into `develop` → *Squash and merge*. Release PRs `develop → main` and sync PRs back into `develop` → **Create a merge commit**, never squash (squash leaves a commit on `main` that `develop` doesn't have, and the next release PR is blocked as out of date).
 - Never commit directly to `develop` or `main`; never force-push them. Both are protected: merging requires the green CI check **`Lint, typecheck, test, build`** (`.github/workflows/ci.yml`).
 - Before pushing, run what CI runs: `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build`.
 
@@ -74,7 +75,7 @@ Run from the repo root (pnpm 10 via Corepack: `corepack enable pnpm`).
 | `pnpm build` | build all packages (topological order) |
 | `pnpm lint` | ESLint in `apps/web`, oxlint (type-aware) in `apps/api` |
 | `pnpm typecheck` | build shared, then `tsc --noEmit` everywhere |
-| `pnpm test` | unit tests (Vitest) |
+| `pnpm test` | unit tests (Vitest: api `*.spec.ts`, web `*.test.ts`) |
 | `pnpm test:e2e` | API e2e tests (Vitest + Supertest) |
 | `pnpm format` / `pnpm format:check` | Prettier (Markdown excluded) |
 | `pnpm db:up` / `pnpm db:down` / `pnpm db:reset` | local Postgres via Docker Compose: dev `:5432`, test `:5433` (in-memory); reset wipes dev data |
@@ -84,6 +85,7 @@ Run from the repo root (pnpm 10 via Corepack: `corepack enable pnpm`).
 | `pnpm db:migrate:deploy` | apply pending migrations (prod/CI) |
 | `pnpm db:generate` | regenerate Prisma Client (also runs on `pnpm install`) |
 | `pnpm db:studio` | Prisma Studio |
+| `pnpm db:seed:users` | build the API and upsert the demo user + admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD` (idempotent; also runs on every prod start) |
 
 _Added in later steps: `db:seed`, `data:fetch` (step 7)._
 
@@ -97,6 +99,8 @@ Pre-commit hook (`simple-git-hooks` + `lint-staged`): Prettier on staged files, 
 - **TypeScript is pinned to `~6.0`.** TS 7 is out, but `typescript-eslint` and the Nest CLI don't support it yet.
 - **`@shelfwise/shared` must be built** before api/web can resolve it; the root scripts handle that.
 - **Next.js 16 conventions:** `middleware.ts` is called `proxy.ts`; Cache Components and Partial Prefetching are on. Read `apps/web/node_modules/next/dist/docs/` before using unfamiliar Next APIs (see `apps/web/AGENTS.md`).
+- **Web auth:** `proxy.ts` silently refreshes the session on page requests; read the user on the server with `getCurrentUser()` (`lib/api/server.ts`) inside `<Suspense>`; client requests go through `apiFetch` (`lib/api/client.ts`, single-flight refresh on `TOKEN_EXPIRED`); after login/logout call `useAuthRedirect()`.
+- **Auth:** every route needs an access token unless marked `@Public()` (global `JwtAuthGuard`); use `@CurrentUser()` and `@Roles('ADMIN')`. Global guard order: `OriginGuard` (CSRF) → `JwtAuthGuard` → `RolesGuard`. Only `register`/`login`/`demo` are rate-limited. e2e tests send `Origin: http://localhost:3000` (or none) on mutating requests.
 - **API errors:** throw `AppException(status, code, message, details?)` from `apps/api/src/common/errors`; the global `AllExceptionsFilter` renders the shared `ApiErrorBody`. Unexpected errors become `500 INTERNAL_ERROR` without internals.
 - **Logging:** `nestjs-pino`; inject `PinoLogger` (`@InjectPinoLogger(Context.name)`). Every response carries `x-request-id`.
 - **App setup shared with e2e:** `configureApp()` in `apps/api/src/app.setup.ts` (helmet, trust proxy); e2e tests must call it.
