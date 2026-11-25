@@ -27,14 +27,18 @@
 Trigger: PRs into `develop` or `main`, and pushes to `develop` / `main`.
 
 ```
-setup (checkout, pnpm/action-setup, setup-node with pnpm cache, pnpm install --frozen-lockfile)
-  → build shared
-  → lint
-  → typecheck (all packages)
+setup (checkout, pnpm/action-setup → version from packageManager, setup-node from .nvmrc with pnpm cache,
+       pnpm install --frozen-lockfile → also prisma generate)
+  → format:check (Prettier)
+  → lint (ESLint web, oxlint api)
+  → typecheck (builds shared first)
   → unit tests
-  → e2e tests (services: postgres:17; prisma migrate deploy on shelfwise_test)
-  → build api + web
+  → e2e tests (service container postgres:17-alpine on :5433; global setup runs prisma migrate deploy)
+  → build (shared, api, web)
 ```
+- Job name **`Lint, typecheck, test, build`** is the required status check in branch protection — renaming it breaks protection.
+- `apps/web` build needs `API_ORIGIN` / `NEXT_PUBLIC_SITE_URL` (env validation); CI sets dummy localhost values.
+- Dependabot (`.github/dependabot.yml`): weekly npm + GitHub Actions updates into `develop`; minor/patch grouped into one PR; majors of TypeScript and Prisma ignored (pinned on purpose).
 - Single job with sequential steps is enough (fast feedback, one cache); split into jobs only if it gets slow.
 - `concurrency` group per branch with `cancel-in-progress`.
 - No secrets needed in CI (Gemini is mocked; test DB is the service container).

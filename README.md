@@ -1,5 +1,7 @@
 # Shelfwise
 
+[![CI](https://github.com/molitvinYe/Shelfwise/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/molitvinYe/Shelfwise/actions/workflows/ci.yml)
+
 Track what you read, rate and review books, curate public collections — and ask an AI reading advisor what to read next, grounded in a real catalog.
 
 > **Status:** monorepo scaffold (roadmap step 1). Landing page + API health check run locally — features land step by step, see the [roadmap](docs/roadmap.md).
