@@ -85,6 +85,7 @@ Run from the repo root (pnpm 10 via Corepack: `corepack enable pnpm`).
 | `pnpm db:migrate:deploy` | apply pending migrations (prod/CI) |
 | `pnpm db:generate` | regenerate Prisma Client (also runs on `pnpm install`) |
 | `pnpm db:studio` | Prisma Studio |
+| `pnpm db:seed:users` | build the API and upsert the demo user + admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD` (idempotent; also runs on every prod start) |
 
 _Added in later steps: `db:seed`, `data:fetch` (step 7)._
 
@@ -98,6 +99,7 @@ Pre-commit hook (`simple-git-hooks` + `lint-staged`): Prettier on staged files, 
 - **TypeScript is pinned to `~6.0`.** TS 7 is out, but `typescript-eslint` and the Nest CLI don't support it yet.
 - **`@shelfwise/shared` must be built** before api/web can resolve it; the root scripts handle that.
 - **Next.js 16 conventions:** `middleware.ts` is called `proxy.ts`; Cache Components and Partial Prefetching are on. Read `apps/web/node_modules/next/dist/docs/` before using unfamiliar Next APIs (see `apps/web/AGENTS.md`).
+- **Auth:** every route needs an access token unless marked `@Public()` (global `JwtAuthGuard`); use `@CurrentUser()` and `@Roles('ADMIN')`. Global guard order: `OriginGuard` (CSRF) → `JwtAuthGuard` → `RolesGuard`. Only `register`/`login`/`demo` are rate-limited. e2e tests send `Origin: http://localhost:3000` (or none) on mutating requests.
 - **API errors:** throw `AppException(status, code, message, details?)` from `apps/api/src/common/errors`; the global `AllExceptionsFilter` renders the shared `ApiErrorBody`. Unexpected errors become `500 INTERNAL_ERROR` without internals.
 - **Logging:** `nestjs-pino`; inject `PinoLogger` (`@InjectPinoLogger(Context.name)`). Every response carries `x-request-id`.
 - **App setup shared with e2e:** `configureApp()` in `apps/api/src/app.setup.ts` (helmet, trust proxy); e2e tests must call it.

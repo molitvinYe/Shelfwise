@@ -6,6 +6,7 @@ import request from 'supertest';
 import { z } from 'zod';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/app.setup.js';
+import { Public } from '../src/modules/auth/decorators/public.decorator.js';
 
 const EchoInput = z.object({
   title: z.string().trim().min(1).max(80),
@@ -14,6 +15,7 @@ const EchoInput = z.object({
 const EchoQuery = z.object({ limit: z.coerce.number().int().max(50) });
 
 /** Test-only controller to exercise the global pipe and filter. */
+@Public()
 @Controller('__test')
 class TestController {
   @Post('echo')

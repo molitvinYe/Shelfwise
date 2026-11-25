@@ -3,13 +3,16 @@ import {
   Get,
   type MessageEvent,
   Query,
+  Req,
   Sse,
   UseGuards,
 } from '@nestjs/common';
 import type { HealthResponse, ReadinessResponse } from '@shelfwise/shared';
+import type { Request } from 'express';
 import { interval, map, type Observable, take } from 'rxjs';
 import { z } from 'zod';
 import { DebugRoutesGuard } from '../../common/guards/debug-routes.guard.js';
+import { Public } from '../auth/decorators/public.decorator.js';
 import { HealthService } from './health.service.js';
 
 const StreamQuery = z.object({
@@ -17,6 +20,7 @@ const StreamQuery = z.object({
 });
 type StreamQuery = z.infer<typeof StreamQuery>;
 
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
@@ -56,5 +60,24 @@ export class HealthController {
         },
       })),
     );
+  }
+
+  /**
+   * Shows how the client IP is resolved behind Render + Vercel (sets TRUST_PROXY_HOPS for the
+   * auth rate limiter). Disabled (404) unless ENABLE_DEBUG_ROUTES=true.
+   */
+  @Get('client-ip')
+  @UseGuards(DebugRoutesGuard)
+  clientIp(@Req() req: Request): {
+    ip: string | undefined;
+    forwardedFor: string | undefined;
+  } {
+    const forwardedFor = req.headers['x-forwarded-for'];
+    return {
+      ip: req.ip,
+      forwardedFor: Array.isArray(forwardedFor)
+        ? forwardedFor.join(', ')
+        : forwardedFor,
+    };
   }
 }

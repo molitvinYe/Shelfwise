@@ -17,6 +17,13 @@ Need stateless request auth (cheap on a sleeping free-tier API), the ability to 
 - **Demo login:** `POST /auth/demo` logs in the seeded demo user without a password — no credentials in the frontend bundle.
 - **Roles:** `@Roles('ADMIN')` + `RolesGuard`, role read from the JWT; role changes take effect at next refresh (≤ 15 min) — acceptable, documented.
 
+## Implementation notes (step 6)
+- Libraries: `jose` for JWTs (ESM-native, also usable from the Next.js proxy), `@node-rs/argon2` for argon2id (prebuilt binaries, no install scripts).
+- Rotation uses a conditional update (`revokedAt IS NULL`) inside the transaction, so two concurrent refreshes with one token can't both win — the loser is treated as reuse. Reuse returns a result instead of throwing so the family revocation commits.
+- CSRF `Origin` check: a mutating request **with** an `Origin` header must match `ALLOWED_ORIGINS`; requests without one (server-to-server refresh from the Next.js proxy, curl) pass — browsers always send `Origin` on cross-site POSTs.
+- Rate limits apply only to `register` / `login` / `demo`: `me`, `refresh` and `logout` are also called server-side by the web app from a shared Vercel IP.
+- Vercel preview deployments are not in `ALLOWED_ORIGINS`, so they can't log in against the production API — on purpose (no preview writes to the production DB).
+
 ## Alternatives considered
 - **Access token in memory (JS), refresh in cookie** — Server Components can't authenticate the first render; every page load needs a client-side refresh round-trip.
 - **Server sessions in DB** — a DB hit per request on a free-tier DB that suspends; also less interesting to present.

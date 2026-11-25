@@ -13,7 +13,7 @@ services:
     autoDeployTrigger: checksPass
     # --prod=false: NODE_ENV=production would otherwise skip devDependencies (Nest CLI, TypeScript, Prisma CLI).
     buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter "@shelfwise/api..." build
-    # Free plan has no pre-deploy hook, so migrations run on start (idempotent).
+    # Free plan has no pre-deploy hook or shell, so migrations and the users seed run on start (both idempotent).
     startCommand: pnpm --filter @shelfwise/api start:prod
     healthCheckPath: /health
     buildFilter:
@@ -35,6 +35,17 @@ services:
         sync: false # Neon pooled connection string
       - key: DIRECT_URL
         sync: false # Neon direct connection string (migrations)
-      # 'true' only while running the SSE spike (roadmap step 5), then back to 'false'.
+      # 'true' only while diagnosing (SSE spike, client-ip check), otherwise 'false'.
       - key: ENABLE_DEBUG_ROUTES
+        sync: false
+      # Auth (docs/adr/0003)
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        value: https://shelfwise-khaki.vercel.app
+      - key: TRUST_PROXY_HOPS
+        value: '1'
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
         sync: false

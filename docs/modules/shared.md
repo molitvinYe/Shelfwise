@@ -42,4 +42,4 @@ packages/shared/src/
 
 ## Implementation checklist
 1. ✅ Package scaffold, tsc build, exports, `errors.ts`, `health.ts`. Pending: `enums.ts`, `errors.ts`, `pagination.ts` (step 1).
-2. Add each module's schemas in the step that builds the module.
+2. Add each module's schemas in the step that builds the module. Step 6 ✅: `enums.ts` (`Role`), `schemas/auth.ts`, auth error codes.

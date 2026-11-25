@@ -24,7 +24,8 @@
     "db:generate": "pnpm --filter @shelfwise/api db:generate",
     "db:migrate": "pnpm --filter @shelfwise/api db:migrate",
     "db:migrate:deploy": "pnpm --filter @shelfwise/api db:migrate:deploy",
-    "db:studio": "pnpm --filter @shelfwise/api db:studio"
+    "db:studio": "pnpm --filter @shelfwise/api db:studio",
+    "db:seed:users": "pnpm --filter @shelfwise/api db:seed:users"
   },
   "devDependencies": {
     "lint-staged": "^17.6.2",

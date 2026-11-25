@@ -7,7 +7,11 @@ export default defineConfig({
   test: {
     globals: true,
     // Real env vars win over apps/api/.env, so tests stay quiet regardless of local config.
-    env: { NODE_ENV: 'test', LOG_LEVEL: 'silent' },
+    env: {
+      NODE_ENV: 'test',
+      LOG_LEVEL: 'silent',
+      JWT_ACCESS_SECRET: 'test-secret-test-secret-test-secret-0123',
+    },
     root: './',
     include: ['**/*.spec.ts'],
   },
