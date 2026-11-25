@@ -2,6 +2,14 @@
 
 Everything outside this repo the project depends on. All are free tiers. **Free-tier limits change — re-check the provider's pricing page when setting each one up** and update this file.
 
+## Production URLs
+
+| What | URL |
+|------|-----|
+| Web (Vercel, production branch `main`) | https://shelfwise-khaki.vercel.app |
+| API (Render, `shelfwise-api`, Frankfurt) | https://shelfwise-api-mhic.onrender.com |
+| Database | Neon project `lively-forest-98506627`, branch `production` |
+
 ## Summary
 
 | Service | Purpose | Plan | Needed from step | Key limits to respect |
