@@ -1,7 +1,7 @@
 # 0001. pnpm monorepo with Zod contracts in `packages/shared`
 
 - Status: Accepted
-- Date: 2026-11-25
+- Date: 2026-11-25 (amended at scaffold, same day: NestJS 12 is ESM-only and ships Standard Schema validation)
 
 ## Context
 Web (Next.js) and API (NestJS) are both TypeScript and must agree on request/response shapes. Duplicated validation drifts; a single developer can't afford contract bugs found only at runtime.
@@ -9,8 +9,8 @@ Web (Next.js) and API (NestJS) are both TypeScript and must agree on request/res
 ## Decision
 - pnpm workspaces: `apps/web`, `apps/api`, `packages/shared` (`@shelfwise/shared`).
 - `packages/shared` contains Zod schemas, inferred DTO types (`z.infer`), enums (`ShelfStatus`, `Role`), error codes and constants (limits). No runtime dependencies besides `zod`.
-- API validates with a `ZodValidationPipe` using those schemas; web uses the same schemas for forms and for parsing responses where useful.
-- `shared` is built with `tsup` to ESM + CJS + `.d.ts` (NestJS consumes CJS `dist`); Next.js may consume it via `transpilePackages`.
+- API validates with NestJS 12's built-in `StandardSchemaValidationPipe` (Zod implements Standard Schema) using those schemas; web uses the same schemas for forms and for parsing responses where useful.
+- `shared` is ESM-only, built with plain `tsc` to `dist/` (`.js` + `.d.ts`). Both NestJS 12 (ESM, `nodenext`) and Next.js consume the built output; no bundler, no `transpilePackages`.
 - No Turborepo: `pnpm -r` / `pnpm --filter` is enough for three packages.
 
 ## Alternatives considered

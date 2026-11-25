@@ -19,3 +19,7 @@ coverage/
 
 # Logs
 *.log
+
+# Next.js
+next-env.d.ts
+.vercel

@@ -9,7 +9,7 @@ Legend: 🔌 = external resource to set up in this step (details in [external-se
 | # | Step | Week | Depends on | 🔌 External | Est. |
 |---|------|------|------------|-------------|------|
 | 0 | Accounts & keys prep | 1 | — | GitHub, Neon, Render, Vercel, Google AI Studio, UptimeRobot | 1h |
-| 1 | Monorepo scaffold | 1 | 0 | — | 3h |
+| 1 | ✅ Monorepo scaffold | 1 | 0 | — | 3h |
 | 2 | Local infra & config | 1 | 1 | Docker | 2h |
 | 3 | Prisma schema, migrations, health | 1 | 2 | — | 3h |
 | 4 | CI pipeline | 1 | 3 | GitHub Actions | 2h |
@@ -64,8 +64,8 @@ flowchart LR
 - **Done when:** every account exists and you have the Gemini API key and Neon connection strings at hand.
 
 ### Step 1. Monorepo scaffold
-- pnpm workspace (`pnpm-workspace.yaml`, `packageManager` field, `.nvmrc`), `tsconfig.base.json` (strict), root ESLint/Prettier, `simple-git-hooks` + `lint-staged`.
-- `apps/web` via `create-next-app` (App Router, TS, Tailwind, ESLint); `apps/api` via `@nestjs/cli new` (strict TS); `packages/shared` with tsup ([shared.md](modules/shared.md)).
+- pnpm workspace (`pnpm-workspace.yaml`, `packageManager` field, `.nvmrc`), `tsconfig.base.json` (strict), root Prettier; ESLint (web) / oxlint (api) as generated.
+- `apps/web` via `create-next-app` (App Router, TS, Tailwind, ESLint); `apps/api` via `@nestjs/cli new` (strict TS, ESM, Vitest); `packages/shared` built with `tsc` ([shared.md](modules/shared.md)).
 - Wire `@shelfwise/shared` into both apps; one schema used by both to prove it works.
 - Next rewrites `/api/:path*` → `API_ORIGIN`.
 - **Done when:** `pnpm dev` starts web + api; web page fetches `/api/health` through the rewrite; `pnpm lint` and `pnpm typecheck` pass. Fill the Commands section of `CLAUDE.md`.
@@ -73,7 +73,8 @@ flowchart LR
 ### Step 2. Local infra & config
 - `docker-compose.yml` with `db` and `db-test` ([infra.md](modules/infra.md)).
 - `.env.example` for api and web; Zod env validation at startup in both apps (fail fast).
-- API `common/`: global `ZodValidationPipe`, exception filter with the error shape, `nestjs-pino` logger with request id, `helmet`, trust proxy.
+- Pre-commit hooks: `simple-git-hooks` + `lint-staged` (format + lint staged files).
+- API `common/`: validation via `StandardSchemaValidationPipe` + shared Zod schemas, exception filter with the error shape, `nestjs-pino` logger with request id, `helmet`, trust proxy.
 - **Done when:** fresh clone → documented commands → running app; missing env var produces a clear startup error.
 
 ### Step 3. Prisma schema, migrations, health

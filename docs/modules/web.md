@@ -30,7 +30,7 @@ The UI. Public pages are Server Components (SEO, fast first paint); interactive 
 - After mutations that affect server-rendered pages, call `router.refresh()`.
 
 ## Auth on the web
-- `middleware.ts` (named `proxy.ts` on Next 16+), matcher on `/me`, `/collections/:path*`, `/advisor`, `/admin/:path*`, and pages that show `myShelf`:
+- `proxy.ts` (Next 16 name for middleware), matcher on `/me`, `/collections/:path*`, `/advisor`, `/admin/:path*`, and pages that show `myShelf`:
   1. If `sw_access` is present and not expired (decode `exp` only — verification happens in the API) → continue.
   2. Else if `sw_refresh` is present → call `${API_ORIGIN}/auth/refresh` server-side forwarding the cookie, copy `Set-Cookie` onto the response, continue.
   3. Else on protected routes → redirect to `/login?next=...`.
@@ -60,7 +60,7 @@ The UI. Public pages are Server Components (SEO, fast first paint); interactive 
 - Optional Playwright smoke (step 19): demo login → search → add to shelf → open public collection.
 
 ## Implementation checklist
-1. `create-next-app` (TS, Tailwind, App Router, ESLint), strict TS, `transpilePackages: ['@shelfwise/shared']`, rewrites, env validation (step 1).
+1. `create-next-app` (TS, Tailwind, App Router, ESLint), strict TS, rewrites, env validation (step 1) ✅.
 2. Layout, nav, UI primitives, Providers (step 1/6).
 3. Auth pages, middleware, fetchers, landing with demo button (step 6).
 4. Catalog + book page (step 8), import dialog (step 9).

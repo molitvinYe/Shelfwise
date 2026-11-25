@@ -33,12 +33,13 @@ packages/shared/src/
 - Breaking a schema = breaking the API: change both apps in the same commit.
 
 ## Build
-- `tsup src/index.ts --format esm,cjs --dts` → `dist/`. `package.json` `exports` maps `import`/`require`/`types`.
-- `pnpm --filter @shelfwise/shared build` runs before api/web typecheck & build in CI; `dev` runs `tsup --watch`.
+- ESM-only. `tsc -p tsconfig.build.json` → `dist/` (`.js`, `.d.ts`, maps). `package.json` `exports` maps `types` / `default`.
+- Source uses `nodenext` resolution, so relative imports end in `.js`.
+- `pnpm --filter @shelfwise/shared build` runs before api/web typecheck & build in CI; `dev` runs `tsc --watch` (root `pnpm dev` builds it once first).
 
 ## Tests
 - Unit tests only for non-trivial refinements (e.g. `yearFrom ≤ yearTo`, cursor schema).
 
 ## Implementation checklist
-1. Package scaffold, tsup, exports, `enums.ts`, `errors.ts`, `pagination.ts` (step 1).
+1. ✅ Package scaffold, tsc build, exports, `errors.ts`, `health.ts`. Pending: `enums.ts`, `errors.ts`, `pagination.ts` (step 1).
 2. Add each module's schemas in the step that builds the module.

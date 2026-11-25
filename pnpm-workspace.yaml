@@ -1,0 +1,7 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm blocks dependency install scripts by default; list the ones allowed to run.
+onlyBuiltDependencies:
+  - '@nestjs/core'

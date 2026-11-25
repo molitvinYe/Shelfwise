@@ -46,13 +46,13 @@ shelfwise/
 │  │  ├─ app/                 routes (see modules/web.md)
 │  │  ├─ components/          UI components (ui/ = primitives, feature folders)
 │  │  ├─ lib/                 api client, query keys, auth helpers
-│  │  └─ middleware.ts        auth gate + silent refresh (proxy.ts on Next 16+)
+│  │  └─ proxy.ts         auth gate + silent refresh (Next 16 "middleware")
 │  └─ api/                    NestJS
 │     ├─ src/
 │     │  ├─ main.ts
 │     │  ├─ app.module.ts
 │     │  ├─ config/           env schema (zod), typed ConfigService
-│     │  ├─ common/           ZodValidationPipe, exception filter, decorators, guards, cursor utils
+│     │  ├─ common/           exception filter, decorators, guards, cursor utils
 │     │  ├─ prisma/           PrismaService
 │     │  └─ modules/          auth, users, books, shelves, collections, ai, admin, health
 │     ├─ prisma/
@@ -259,7 +259,7 @@ sequenceDiagram
 ## API conventions
 
 - **Base path:** the API itself serves routes without a prefix (`/auth/login`); the browser sees them as `/api/auth/login` via the rewrite. Next.js rewrite: `/api/:path*` → `${API_ORIGIN}/:path*`.
-- **Validation:** every body/query/param goes through `ZodValidationPipe` with a schema from `@shelfwise/shared`. Unknown keys are stripped.
+- **Validation:** every body/query/param goes through Nest 12's built-in `StandardSchemaValidationPipe` (`@Body({ schema })`, `@Query({ schema })`) with a Zod schema from `@shelfwise/shared`. Unknown keys are stripped.
 - **Errors:** one global exception filter; shape
   ```json
   { "error": { "code": "VALIDATION_FAILED", "message": "Human readable", "details": [ ... ] } }
@@ -280,9 +280,9 @@ sequenceDiagram
 
 | Level | Tool | Scope |
 |-------|------|-------|
-| Unit | Jest | services with branching logic: token rotation, quota checks, cursor encode/decode, slug generation, reorder, search query builder |
-| E2E (API) | Jest + Supertest + real Postgres (`shelfwise_test`) | auth flows (incl. refresh reuse), shelves CRUD + authz, collections public/private, admin RBAC, AI quota (Gemini mocked) |
-| Web | Jest + Testing Library (light) | only components with logic (optimistic shelf button, reorder list) |
+| Unit | Vitest | services with branching logic: token rotation, quota checks, cursor encode/decode, slug generation, reorder, search query builder |
+| E2E (API) | Vitest + Supertest + real Postgres (`shelfwise_test`) | auth flows (incl. refresh reuse), shelves CRUD + authz, collections public/private, admin RBAC, AI quota (Gemini mocked) |
+| Web | Vitest + Testing Library (light) | only components with logic (optimistic shelf button, reorder list) |
 | Smoke (optional) | Playwright | demo login → search → add to shelf → open collection |
 
 The LLM is never called in tests: the AI service takes the model as an injectable dependency, and tests use the AI SDK's mock model.

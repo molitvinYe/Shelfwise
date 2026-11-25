@@ -1,0 +1,24 @@
+{
+  "name": "shelfwise",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "shared:build": "pnpm --filter @shelfwise/shared build",
+    "predev": "pnpm shared:build",
+    "dev": "pnpm --parallel --recursive --filter=!shelfwise dev",
+    "build": "pnpm --recursive build",
+    "lint": "pnpm --recursive lint",
+    "typecheck": "pnpm shared:build && pnpm --recursive typecheck",
+    "test": "pnpm shared:build && pnpm --recursive test",
+    "test:e2e": "pnpm shared:build && pnpm --filter @shelfwise/api test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.10.1"
+  }
+}

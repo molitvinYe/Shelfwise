@@ -28,7 +28,7 @@ Read the relevant doc before working on a module. Keep docs in sync with the cod
 **Data:** PostgreSQL (Neon in prod, Docker Compose locally). Book data seeded from the Open Library API.
 **Auth:** short-lived access JWT + rotating refresh token, both in httpOnly Secure cookies; refresh token hashes stored in DB; passwords hashed with argon2.
 **AI:** Gemini Flash via Vercel AI SDK (`@ai-sdk/google`) on the API side; streaming over SSE; tool calling against our own catalog.
-**Testing:** Jest (unit), Jest + Supertest against a test DB (e2e), optional Playwright smoke tests.
+**Testing:** Vitest (unit), Vitest + Supertest against a test DB (e2e), optional Playwright smoke tests.
 **CI:** GitHub Actions — lint → typecheck → test → build.
 **Deploy:** Vercel (web), Render (api, free tier + uptime ping on `/health`), Neon (db).
 
@@ -53,8 +53,32 @@ Book clubs, reading challenges, publishing user-written works, payments, social 
 - Error responses: `{ "error": { "code", "message", "details?" } }`; list responses: `{ "items", "nextCursor" }`.
 - Every async UI has loading, empty and error states; accessibility and responsive layout are part of "done".
 - Conventional Commits (`feat(api): ...`, `fix(web): ...`, `docs: ...`).
+- **No AI attribution anywhere:** no `Co-Authored-By: Claude` trailers, no "Generated with Claude Code" lines or 🤖 markers in commits, PRs, issues, code or docs.
 - Keep `.env.example`, this file and `docs/` up to date when env variables, commands or architecture change.
 
 ## Commands
 
-_To be filled in after the scaffold is created (roadmap step 1): dev, build, lint, typecheck, test, test:e2e, db:migrate, db:seed, data:fetch._
+Run from the repo root (pnpm 10 via Corepack: `corepack enable pnpm`).
+
+| Command | What it does |
+|---------|--------------|
+| `pnpm dev` | build shared, then shared (watch) + api :4000 (watch) + web :3000 |
+| `pnpm build` | build all packages (topological order) |
+| `pnpm lint` | ESLint in `apps/web`, oxlint (type-aware) in `apps/api` |
+| `pnpm typecheck` | build shared, then `tsc --noEmit` everywhere |
+| `pnpm test` | unit tests (Vitest) |
+| `pnpm test:e2e` | API e2e tests (Vitest + Supertest) |
+| `pnpm format` / `pnpm format:check` | Prettier (Markdown excluded) |
+| `pnpm --filter @shelfwise/<pkg> <script>` | run a script in one package |
+
+_Added in later steps: `db:migrate`, `db:seed`, `data:fetch` (steps 2–7)._
+
+## Tooling notes
+
+- **ESM everywhere.** NestJS 12 is ESM-only: relative imports in `apps/api` and `packages/shared` end in `.js`; use `import.meta.dirname`, not `__dirname`.
+- **Tests run on Vitest** (Nest 12 default): `vi.fn()`, not `jest.fn()`.
+- **Validation:** Nest 12's `StandardSchemaValidationPipe` with shared Zod schemas (`@Body({ schema })`). No class-validator.
+- **TypeScript is pinned to `~6.0`.** TS 7 is out, but `typescript-eslint` and the Nest CLI don't support it yet.
+- **`@shelfwise/shared` must be built** before api/web can resolve it; the root scripts handle that.
+- **Next.js 16 conventions:** `middleware.ts` is called `proxy.ts`; Cache Components and Partial Prefetching are on. Read `apps/web/node_modules/next/dist/docs/` before using unfamiliar Next APIs (see `apps/web/AGENTS.md`).
+- `apps/api/AGENTS.md` holds NestJS 12 framework notes from the generator.
