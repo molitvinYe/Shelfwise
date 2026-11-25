@@ -32,6 +32,6 @@ Stats (`ProfileStats`): `{ readCount, readingCount, wantCount, averageRating | n
 - e2e: public profile hides email; demo user PATCH → 403.
 
 ## Implementation checklist
-1. `UsersService`: `create`, `findByEmail`, `findById`, `toPublicUser` (step 6).
+1. `UsersService`: `create`, `findByEmail`, `findById`, `findDemo`, `toPublicUser` (step 6) ✅.
 2. `PATCH /users/me` (step 11).
 3. `GET /users/:id/profile` with stats (step 11, after shelves).
