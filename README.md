@@ -33,6 +33,7 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 pnpm db:up                                  # Postgres for dev (:5432) and tests (:5433)
 pnpm db:migrate                             # apply migrations to the dev database
+pnpm db:seed                                # demo user, admin and ~2–3k books from the committed snapshot
 pnpm dev
 ```
 
@@ -52,4 +53,6 @@ pnpm dev
 | `pnpm format` / `pnpm format:check` | Prettier |
 | `pnpm db:up` / `db:down` / `db:reset` | start / stop / wipe local Postgres (Docker Compose) |
 | `pnpm db:migrate` / `db:migrate:deploy` | Prisma migrations (dev / prod & CI) |
+| `pnpm db:seed` | seed users + catalog (idempotent) |
+| `pnpm data:fetch` | rebuild the catalog snapshot from Open Library |
 | `pnpm db:studio` | browse the database |

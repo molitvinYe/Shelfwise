@@ -85,9 +85,8 @@ Run from the repo root (pnpm 10 via Corepack: `corepack enable pnpm`).
 | `pnpm db:migrate:deploy` | apply pending migrations (prod/CI) |
 | `pnpm db:generate` | regenerate Prisma Client (also runs on `pnpm install`) |
 | `pnpm db:studio` | Prisma Studio |
-| `pnpm db:seed:users` | build the API and upsert the demo user + admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD` (idempotent; also runs on every prod start) |
-
-_Added in later steps: `db:seed`, `data:fetch` (step 7)._
+| `pnpm db:seed` | build the API, then seed demo user + admin (`ADMIN_EMAIL`/`ADMIN_PASSWORD`) and the catalog from `apps/api/data/books.snapshot.json`; idempotent, insert-only; also runs on every prod start |
+| `pnpm data:fetch` | rebuild the catalog snapshot from Open Library (~15–20 min, rate-limited); commit the result |
 
 Pre-commit hook (`simple-git-hooks` + `lint-staged`): Prettier on staged files, then lint of the touched app. Skip once with `SKIP_SIMPLE_GIT_HOOKS=1 git commit ...` only when really needed.
 
