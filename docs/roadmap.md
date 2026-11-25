@@ -10,9 +10,9 @@ Legend: 🔌 = external resource to set up in this step (details in [external-se
 |---|------|------|------------|-------------|------|
 | 0 | Accounts & keys prep | 1 | — | GitHub, Neon, Render, Vercel, Google AI Studio, UptimeRobot | 1h |
 | 1 | ✅ Monorepo scaffold | 1 | 0 | — | 3h |
-| 2 | Local infra & config | 1 | 1 | Docker | 2h |
-| 3 | Prisma schema, migrations, health | 1 | 2 | — | 3h |
-| 4 | CI pipeline | 1 | 3 | GitHub Actions | 2h |
+| 2 | ✅ Local infra & config | 1 | 1 | Docker | 2h |
+| 3 | ✅ Prisma schema, migrations, health | 1 | 2 | — | 3h |
+| 4 | ✅ CI pipeline | 1 | 3 | GitHub Actions | 2h |
 | 5 | Deploy skeleton + SSE spike + pinger | 1 | 4 | Neon, Render, Vercel, UptimeRobot | 3h |
 | 6 | Auth end to end | 1 | 5 | — | 6h |
 | 7 | Catalog data: fetch + snapshot + seed | 1 | 3 | Open Library API | 3h |
@@ -85,13 +85,14 @@ flowchart LR
 
 ### Step 4. CI pipeline
 - 🔌 GitHub Actions workflow per [infra.md § CI](modules/infra.md#ci-github-actions--githubworkflowsciyml) with a Postgres service.
-- Branch protection on `main` requiring CI; Dependabot config.
+- Branch protection on `develop` and `main` requiring CI; Dependabot config (PRs target `develop`).
 - **Done when:** a PR shows green lint → typecheck → test → e2e → build.
 
 ### Step 5. Deploy skeleton + SSE spike + pinger
-- 🔌 Neon: create project, get pooled + direct URLs, run `prisma migrate deploy` against it.
-- 🔌 Render: web service for api, env vars, health check path, auto-deploy.
-- 🔌 Vercel: project with Root Directory `apps/web`, `API_ORIGIN` = Render URL, `NEXT_PUBLIC_SITE_URL`.
+- 🔌 Neon: create project (Frankfurt), get pooled + direct URLs. Migrations are applied by the API on start.
+- 🔌 Render: Blueprint from `render.yaml` (auto-deploy from `main` after green CI).
+- **First release:** merge `develop → main` so Render/Vercel production have something to deploy.
+- 🔌 Vercel: project with Root Directory `apps/web`, production branch `main`, `API_ORIGIN` = Render URL, `NEXT_PUBLIC_SITE_URL`.
 - **SSE spike:** enable `/health/stream` temporarily; open `https://<web>.vercel.app/api/health/stream` and confirm events arrive **incrementally** for the full 60s. Record the result in [ADR-0002](adr/0002-same-origin-api-proxy.md) (if it fails → apply the fallback and write ADR-0008).
 - 🔌 UptimeRobot monitor on `https://<api>.onrender.com/health`, 5–10 min interval.
 - **Done when:** live web URL renders and reaches the API through `/api/*`; SSE verdict recorded; monitor is green.

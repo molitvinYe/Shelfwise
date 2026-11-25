@@ -19,21 +19,29 @@ Everything outside this repo the project depends on. All are free tiers. **Free-
 
 ### Neon
 1. Create project (region close to the Render region, e.g. both in EU-Central/Frankfurt or both in US-East).
-2. Copy **two** connection strings: pooled (host contains `-pooler`) → `DATABASE_URL` (append `?sslmode=require&pgbouncer=true` if required by the Prisma version); direct → `DIRECT_URL`.
-3. In `schema.prisma`: `datasource db { url = env("DATABASE_URL") directUrl = env("DIRECT_URL") }`.
+2. Copy **two** connection strings: pooled (host contains `-pooler`) → `DATABASE_URL`; direct → `DIRECT_URL`. Both with `?sslmode=require`.
+3. Prisma 7: the app connects with `DATABASE_URL` through the `@prisma/adapter-pg` driver adapter (`PrismaService`); the CLI (`migrate deploy`, `studio`) reads `DIRECT_URL` from `apps/api/prisma.config.ts`. There is no `url`/`directUrl` in `schema.prisma` any more.
 4. Run migrations and seed **from your machine** once: `pnpm db:migrate:deploy && pnpm db:seed` with prod env.
 
 ### Render
-1. New → Web Service → connect the GitHub repo → runtime Node.
-2. Build / start commands from [modules/infra.md § Deploy](modules/infra.md#deploy).
-3. Health check path: `/health`.
-4. Add env vars (table below). Use "Generate" for secrets like `JWT_ACCESS_SECRET`.
-5. Pick the region matching Neon.
+The service is described in [`render.yaml`](../render.yaml) (Blueprint): build/start commands, health check, region, env var names.
+1. Dashboard → **New → Blueprint** → connect the GitHub repo → it detects `render.yaml` → service `shelfwise-api` (free, Frankfurt).
+2. Fill the `sync: false` variables when prompted: `DATABASE_URL` (Neon pooled), `DIRECT_URL` (Neon direct), `ENABLE_DEBUG_ROUTES` (`true` during the SSE spike, then `false`).
+3. Deploys come from `main` only, and only after the CI check is green (`autoDeployTrigger: checksPass`). Pushes that don't touch the API (`buildFilter`) don't redeploy it.
+4. Migrations run on every start (`prisma migrate deploy && node dist/main.js`) because the free plan has no pre-deploy hook; it's idempotent.
+5. Build uses `pnpm install --prod=false`: with `NODE_ENV=production` pnpm would otherwise skip devDependencies (Nest CLI, TypeScript, Prisma CLI) and the build fails.
+6. Later steps add secrets here (e.g. `JWT_ACCESS_SECRET` — use Render's "Generate").
 
 ### Vercel
-1. Import repo → Root Directory `apps/web` → Framework Next.js (pnpm workspace auto-detected).
-2. Env vars: `API_ORIGIN=https://<api>.onrender.com`, `NEXT_PUBLIC_SITE_URL=https://<web>.vercel.app`.
-3. After first deploy, set `WEB_ORIGIN` on Render to the Vercel URL (used by the API's Origin check).
+[`apps/web/vercel.json`](../apps/web/vercel.json) sets install/build commands for the monorepo (installs at the workspace root, builds `@shelfwise/web` and its dependency `@shelfwise/shared`).
+1. **Add New → Project** → import the repo → **Root Directory `apps/web`** → Framework Next.js.
+2. Env vars (Production + Preview) **before the first deploy** — the `/api/*` rewrite destination is baked in at build time:
+   - `API_ORIGIN=https://<api>.onrender.com`
+   - `NEXT_PUBLIC_SITE_URL=https://<project>.vercel.app`
+   - `ENABLE_EXPERIMENTAL_COREPACK=1` — makes Vercel use the exact pnpm version from `packageManager`.
+3. Settings → Git → **Production Branch `main`**. `develop` and PRs get preview deployments.
+4. Changing `API_ORIGIN` later requires a redeploy.
+5. Later (auth step): set `WEB_ORIGIN` on Render to the Vercel URL (used by the API's Origin check).
 
 ### Uptime pinger
 - UptimeRobot → HTTP(s) monitor → `https://<api>.onrender.com/health` → interval 5–10 min.
@@ -65,7 +73,7 @@ Everything outside this repo the project depends on. All are free tiers. **Free-
 | `ACCESS_TOKEN_TTL_SECONDS` | no | `900` | |
 | `REFRESH_TOKEN_TTL_DAYS` | no | `7` | |
 | `WEB_ORIGIN` | yes | `http://localhost:3000` | allowed `Origin` for mutating requests |
-| `LOG_LEVEL` | no | `info` | |
+| `LOG_LEVEL` | no | `info` | `silent` in tests (set by Vitest config); `pino-pretty` output in development |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | seed only | — | creates first admin if absent |
 | `DEMO_USER_EMAIL` | seed only | `demo@shelfwise.dev` | demo user has no usable password |
 | `OPEN_LIBRARY_CONTACT` | yes | email or repo URL | in `User-Agent` |
@@ -78,7 +86,7 @@ Everything outside this repo the project depends on. All are free tiers. **Free-
 | `AI_DAILY_REQUESTS_DEMO_PER_IP` | no | `5` | |
 | `AI_GLOBAL_DAILY_REQUESTS` | no | `500` | keep below provider RPD |
 | `IP_HASH_SALT` | if AI enabled | random | hashing IPs for `AiIpUsage` |
-| `ENABLE_DEBUG_ROUTES` | no | `false` | `/health/stream` spike |
+| `ENABLE_DEBUG_ROUTES` | no | `false` | enables `GET /health/stream?seconds=N` (SSE spike, max 120s); keep `false` in production after the spike |
 | `CRON_SECRET` | optional | random | nightly demo reset |
 | `TEST_DATABASE_URL` | tests | `postgresql://postgres:postgres@localhost:5433/shelfwise_test` | e2e |
 

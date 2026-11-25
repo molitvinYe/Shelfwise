@@ -9,3 +9,10 @@ export const HealthResponse = z.object({
   timestamp: z.iso.datetime(),
 });
 export type HealthResponse = z.infer<typeof HealthResponse>;
+
+/** Response of `GET /health/ready` — checks dependencies (database). 503 with an `ApiErrorBody` otherwise. */
+export const ReadinessResponse = z.object({
+  status: z.literal('ok'),
+  db: z.literal('ok'),
+});
+export type ReadinessResponse = z.infer<typeof ReadinessResponse>;
