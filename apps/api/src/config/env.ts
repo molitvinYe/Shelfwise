@@ -47,6 +47,18 @@ const EnvSchema = z
     /** Per-IP limit for `POST /auth/register` per hour. */
     SIGNUP_THROTTLE_PER_HOUR: z.coerce.number().int().positive().default(5),
 
+    /** Contact in the Open Library User-Agent (import on demand, `data:fetch`). */
+    OPEN_LIBRARY_CONTACT: z
+      .string()
+      .min(3)
+      .max(200)
+      .default('https://github.com/molitvinYe/Shelfwise'),
+    /** Per-user limits on Open Library calls (we must not become a free Open Library proxy). */
+    IMPORT_PER_HOUR: z.coerce.number().int().positive().default(10),
+    /** The demo account is shared by every visitor: a lower, shared budget. */
+    IMPORT_PER_HOUR_DEMO: z.coerce.number().int().positive().default(3),
+    EXTERNAL_SEARCH_PER_MINUTE: z.coerce.number().int().positive().default(20),
+
     /** Admin account created by the users seed. Both or neither. */
     ADMIN_EMAIL: z.email().optional(),
     ADMIN_PASSWORD: z.string().min(12).max(128).optional(),

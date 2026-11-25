@@ -84,9 +84,18 @@ export function pickLanguage(
  * Maps a search doc to a catalog book without a description (that needs `/works/{id}.json`).
  * Returns null for entries not worth showing: no title, no author, no cover or no year.
  */
+export interface MapOptions {
+  /**
+   * The curated snapshot only keeps works with a cover and a year (it is what visitors browse).
+   * Import on demand is lenient: a user explicitly asked for that book.
+   */
+  requireCoverAndYear?: boolean;
+}
+
 export function mapSearchDoc(
   doc: SearchDoc,
   fetchedFor?: Category,
+  { requireCoverAndYear = true }: MapOptions = {},
 ): Omit<SnapshotBook, 'description'> | null {
   const english = doc.editions?.docs[0];
   const title = (
@@ -97,11 +106,15 @@ export function mapSearchDoc(
   const authors = [
     ...new Set((doc.author_name ?? []).map((a) => a.trim()).filter(Boolean)),
   ];
-  const year = doc.first_publish_year;
-  if (!title || authors.length === 0 || !doc.cover_i || year === undefined)
+  const year =
+    doc.first_publish_year !== undefined &&
+    doc.first_publish_year >= 0 &&
+    doc.first_publish_year <= 2100
+      ? doc.first_publish_year
+      : null;
+  if (!title || authors.length === 0 || !/^\/works\/OL\d+W$/.test(doc.key))
     return null;
-  if (!/^\/works\/OL\d+W$/.test(doc.key) || year < 0 || year > 2100)
-    return null;
+  if (requireCoverAndYear && (!doc.cover_i || year === null)) return null;
 
   return {
     olKey: doc.key,
@@ -110,7 +123,7 @@ export function mapSearchDoc(
     year,
     subjects: toCategories(doc.subject ?? [], fetchedFor),
     language: pickLanguage(doc.language),
-    coverId: doc.cover_i,
+    coverId: doc.cover_i ?? null,
   };
 }
 
@@ -126,12 +139,19 @@ export function extractDescription(work: WorkResponse): string | null {
   if (!raw) return null;
 
   const text = (raw.split(/\r?\n\s*-{3,}\s*\r?\n/)[0] ?? '')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/\[\d+\]:\s*\S+/g, '')
+    .replace(/<[^>]+>/g, ' ') // <br>, <i>…
+    .replace(/\s*\(\[[^\]]+\]\[\d+\]\)/g, '') // "([source][1])"
+    .replace(/\[([^\]]+)\]\[\d+\]/g, '$1') // reference link "[text][1]"
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // inline link "[text](url)"
+    .replace(/\[\d+\]:\s*\S+/g, '') // reference definitions
+    .replace(/_{3,}/g, ' ') // "_____" separator lines
+    .replace(/(\*{1,3}|__)(?=[^\s*_])([^*]*?[^\s*_])\1/g, '$2') // *em*, **strong**, ***both***, __strong__
+    .replace(/\*{2,}/g, '') // unbalanced leftovers
     .replace(/\s+/g, ' ')
     .trim();
   if (!text) return null;
-  if (text.length <= DESCRIPTION_MAX) return text;
+  // `+ 1` keeps an already truncated text ("…") unchanged, so cleaning is idempotent.
+  if (text.length <= DESCRIPTION_MAX + 1) return text;
 
   const cut = text.slice(0, DESCRIPTION_MAX);
   const lastSpace = cut.lastIndexOf(' ');

@@ -267,7 +267,7 @@ sequenceDiagram
   Codes are a shared enum (`packages/shared/src/errors.ts`). Status codes: 400 validation, 401 unauthenticated / `TOKEN_EXPIRED`, 403 forbidden, 404, 409 conflict (e.g. email taken), 429 rate/quota, 502 upstream (Open Library / Gemini) failure, 500 otherwise (message hidden, logged with request id).
 - **Pagination:** cursor-based everywhere ([ADR-0005](adr/0005-cursor-pagination.md)). Request `?limit=20&cursor=<opaque>`; `limit` max 50. Response `{ "items": [...], "nextCursor": "..." | null }`. Cursor = base64url JSON of the last item's sort key(s) + `id`.
 - **Auth:** JWT guard global; public routes marked `@Public()`. Mutating requests require an `Origin` header matching `WEB_ORIGIN` (CSRF defence in depth on top of `SameSite=Lax`).
-- **Rate limits:** `@nestjs/throttler` — strict on `/auth/*` and `/books/import`, relaxed default elsewhere. Behind Render's proxy, `trust proxy` is enabled so the client IP is correct.
+- **Rate limits:** `@nestjs/throttler` per IP on `register`/`login`/`demo`; per-user fixed windows on Open Library search and import (`common/rate-limit`). Behind Render's proxy, `trust proxy` is enabled so the client IP is correct.
 - **Timeouts:** outbound HTTP (Open Library) 5s with 1 retry on idempotent GETs; Gemini calls bounded by `maxOutputTokens`, step limit and a 60s overall abort.
 - **Logging:** `nestjs-pino`, JSON in prod, request id per request (also returned in `x-request-id`), cookies and `authorization` redacted.
 

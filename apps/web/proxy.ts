@@ -5,7 +5,7 @@ import { safeNext } from '@/lib/auth/safe-next';
 import { getServerEnv } from '@/lib/env';
 
 /** Pages that need a session; the pages re-check on the server, this only saves a round trip. */
-const PROTECTED_PREFIXES = ['/me'];
+const PROTECTED_PREFIXES = ['/me', '/books/import'];
 /** Pages that make no sense with a session. */
 const GUEST_ONLY = ['/login', '/register'];
 /** Refresh a bit before expiry so the token doesn't die mid-render. */

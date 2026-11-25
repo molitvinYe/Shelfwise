@@ -13,6 +13,9 @@ describe('committed catalog snapshot', () => {
     for (const book of books) {
       for (const subject of book.subjects) expect(labels).toContain(subject);
     }
+    for (const { description } of books) {
+      expect(description ?? '').not.toMatch(/\*\*|<[a-z/]|\]\[\d/i); // markdown/HTML leftovers
+    }
     const described = books.filter((b) => b.description).length;
     expect(described / books.length).toBeGreaterThan(0.6);
   });

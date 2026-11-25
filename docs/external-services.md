@@ -85,7 +85,9 @@ The service is described in [`render.yaml`](../render.yaml) (Blueprint): build/s
 | `SIGNUP_THROTTLE_PER_HOUR` | no | `5` | per-IP limit on `register` |
 | `LOG_LEVEL` | no | `info` | `silent` in tests (set by Vitest config); `pino-pretty` output in development |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | seed only | — | both or neither; the users seed (runs on every start) creates the admin if absent, never overwrites the password, never promotes an existing non-admin account with that email (warns instead). Password ≥ 12 chars. Set it **before** the API is publicly reachable with registration |
-| `OPEN_LIBRARY_CONTACT` | no | `https://github.com/molitvinYe/Shelfwise` (default) | in the Open Library `User-Agent` (`data:fetch` now, import on demand in step 9) |
+| `OPEN_LIBRARY_CONTACT` | no | `https://github.com/molitvinYe/Shelfwise` (default) | in the Open Library `User-Agent` (`data:fetch` and import on demand) |
+| `IMPORT_PER_HOUR` / `IMPORT_PER_HOUR_DEMO` | no | `10` / `3` | per-user Open Library imports per hour; the demo account is shared |
+| `EXTERNAL_SEARCH_PER_MINUTE` | no | `20` | per-user Open Library searches per minute |
 | `AI_ENABLED` | no | `true` | kill switch |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | if AI enabled | — | AI Studio key |
 | `AI_MODEL` | if AI enabled | a current Gemini Flash / Flash-Lite id | |

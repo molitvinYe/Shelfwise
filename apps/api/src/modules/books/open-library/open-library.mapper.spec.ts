@@ -59,6 +59,30 @@ describe('mapSearchDoc', () => {
   });
 });
 
+describe('mapSearchDoc for import on demand', () => {
+  it('keeps works without a cover or a year when not strict', () => {
+    expect(
+      mapSearchDoc(
+        doc({ cover_i: undefined, first_publish_year: undefined }),
+        undefined,
+        {
+          requireCoverAndYear: false,
+        },
+      ),
+    ).toMatchObject({ coverId: null, year: null, subjects: ['fantasy'] });
+  });
+
+  it('still drops works without a title or an author', () => {
+    const lenient = { requireCoverAndYear: false };
+    expect(
+      mapSearchDoc(doc({ author_name: [] }), undefined, lenient),
+    ).toBeNull();
+    expect(
+      mapSearchDoc(doc({ title: '', editions: undefined }), undefined, lenient),
+    ).toBeNull();
+  });
+});
+
 describe('toCategories', () => {
   it('uses only the fetched category when given', () => {
     expect(toCategories(['Romance', 'History'], fantasy)).toEqual(['fantasy']);
@@ -96,6 +120,33 @@ describe('extractDescription', () => {
     expect(extractDescription({ description: raw })).toBe(
       'A classic novel. Second line.',
     );
+  });
+
+  it('strips markdown emphasis, reference links and HTML', () => {
+    const raw =
+      '***Dune*** is a **1965** novel.<br/>It won the *Hugo*. ([source][1])\n\n[1]: https://example.com';
+    expect(extractDescription({ description: raw })).toBe(
+      'Dune is a 1965 novel. It won the Hugo.',
+    );
+    expect(
+      extractDescription({ description: 'See [the saga][2] and __more__.' }),
+    ).toBe('See the saga and more.');
+  });
+
+  it('turns underscore separator lines into a space', () => {
+    expect(
+      extractDescription({
+        description: 'ninja! ______ Naruto is a __manga__.',
+      }),
+    ).toBe('ninja! Naruto is a manga.');
+  });
+
+  it('is idempotent (safe to re-apply to stored descriptions)', () => {
+    const once =
+      extractDescription({
+        description: `**Bold** ${'word '.repeat(DESCRIPTION_MAX)}`,
+      }) ?? '';
+    expect(extractDescription({ description: once })).toBe(once);
   });
 
   it('truncates long descriptions at a word boundary', () => {
