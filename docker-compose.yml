@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: shelfwise
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432' # loopback only: never expose the dev DB to the network
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
@@ -26,7 +26,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: shelfwise_test
     ports:
-      - '5433:5432'
+      - '127.0.0.1:5433:5432'
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:
