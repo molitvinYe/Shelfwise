@@ -22,14 +22,16 @@ Registration, login, demo login, logout, token refresh with rotation and reuse d
 `user` = `PublicUser` {id, email, displayName, role, isDemo}.
 
 ## Business rules
-- **Cookies:** `sw_access` (15 min, `Path=/`) and `sw_refresh` (7 days, `Path=/api/auth`), both `httpOnly; Secure; SameSite=Lax`. In local dev `Secure` is off (`NODE_ENV !== 'production'`).
+- **Cookies:** `sw_access` (15 min) and `sw_refresh` (7 days), both `Path=/; httpOnly; Secure; SameSite=Lax`. The refresh cookie is not narrowed to `/api/auth`: the Next.js proxy refreshes the session on page requests, so it must see it. In local dev `Secure` is off (`NODE_ENV !== 'production'`).
 - **Register:** email normalised (trim + lowercase); `409 EMAIL_TAKEN` on unique violation (catch Prisma `P2002`, don't pre-check — avoids races).
 - **Login:** constant error `401 INVALID_CREDENTIALS` for unknown email or wrong password; run argon2 verify against a dummy hash when the user doesn't exist to keep timing similar.
 - **Refresh (transaction):**
   1. hash presented token → find row;
   2. not found or expired → 401;
-  3. `revokedAt` set → **reuse detected** → revoke all tokens of that `familyId`, log a warning, 401;
-  4. otherwise set `revokedAt = now`, insert new token with same `familyId`, issue new access JWT.
+  3. `revokedAt` set:
+     - rotated (`rotatedAt`) less than **30 s** ago and the family still has a live token → a concurrent request with the same cookie (parallel prefetches, two tabs): issue a successor, don't revoke;
+     - otherwise **reuse detected** → revoke all tokens of that `familyId`, log a warning, 401;
+  4. otherwise set `revokedAt = rotatedAt = now` (conditional on `revokedAt IS NULL`; a lost race goes through step 3), insert new token with same `familyId`, issue new access JWT.
 - **Logout:** revoke all tokens in the presented token's family; clear cookies even if no token.
 - **Cleanup:** on each login, delete that user's tokens expired > 1 day ago.
 - **Demo:** `/auth/demo` finds the user with `isDemo = true` (seeded); 503 if missing.
@@ -63,4 +65,4 @@ Pages `/login`, `/register`, landing "Log in as demo" button — see [web.md](we
 5. Global `JwtAuthGuard`, `@Public`, `@CurrentUser`, `RolesGuard`, `@Roles`. ✅
 6. Throttler config, Origin check. ✅
 7. e2e tests. ✅
-8. Web: login/register pages, auth state, middleware refresh (see web.md).
+8. Web: login/register pages, auth state, proxy refresh (see web.md). ✅

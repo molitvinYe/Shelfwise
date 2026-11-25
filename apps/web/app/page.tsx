@@ -1,4 +1,7 @@
+import Link from 'next/link';
 import { ApiStatus } from '@/components/api-status';
+import { DemoLoginButton } from '@/components/auth/demo-login-button';
+import { buttonClasses } from '@/components/ui/button';
 
 const features = [
   {
@@ -33,6 +36,12 @@ export default function Home() {
           A book-tracking platform with an AI reading advisor that only
           recommends books that actually exist in the catalog.
         </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+          <DemoLoginButton variant="primary" />
+          <Link href="/register" className={buttonClasses('secondary')}>
+            Create an account
+          </Link>
+        </div>
         <p className="inline-flex w-fit items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-muted">
           <span className="size-1.5 rounded-full bg-accent" aria-hidden />
           Early scaffold — features land step by step (see docs/roadmap.md)

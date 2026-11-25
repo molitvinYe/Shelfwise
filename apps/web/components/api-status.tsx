@@ -2,7 +2,7 @@
 
 import { HealthResponse } from '@shelfwise/shared';
 import { useQuery } from '@tanstack/react-query';
-import { apiGet } from '@/lib/api-client';
+import { apiGet } from '@/lib/api/client';
 
 function formatUptime(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;

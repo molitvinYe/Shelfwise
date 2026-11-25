@@ -8,6 +8,7 @@ import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/app.setup.js';
 import type { PrismaClient } from '../src/generated/prisma/client.js';
 import { Roles } from '../src/modules/auth/decorators/roles.decorator.js';
+import { REUSE_INTERVAL_MS } from '../src/modules/auth/token.service.js';
 import { DEMO_USER, seedUsers } from '../src/seed/seed-users.js';
 import { cookiesFrom, setCookieLine } from './auth-helpers.js';
 import { createTestPrisma, resetDatabase } from './db.js';
@@ -47,6 +48,13 @@ describe('Auth (e2e)', () => {
 
   const refresh = (token: string) =>
     http.post('/auth/refresh').set('Cookie', `sw_refresh=${token}`);
+
+  /** Moves every rotation past the reuse interval, so a replay counts as theft. */
+  const ageRotations = () =>
+    prisma.refreshToken.updateMany({
+      where: { rotatedAt: { not: null } },
+      data: { rotatedAt: new Date(Date.now() - REUSE_INTERVAL_MS - 1000) },
+    });
 
   const me = (access: string) =>
     http.get('/auth/me').set('Cookie', `sw_access=${access}`);
@@ -91,7 +99,7 @@ describe('Auth (e2e)', () => {
       expect(access).toMatch(/HttpOnly/);
       expect(access).toMatch(/SameSite=Lax/);
       expect(access).toMatch(/Path=\//);
-      expect(refreshLine).toMatch(/Path=\/api\/auth/);
+      expect(refreshLine).toMatch(/Path=\/;/);
       expect(refreshLine).toMatch(/HttpOnly/);
 
       const stored = await prisma.user.findUniqueOrThrow({
@@ -220,9 +228,10 @@ describe('Auth (e2e)', () => {
       await refresh(second).expect(200);
     });
 
-    it('reusing a rotated token revokes the whole family', async () => {
+    it('reusing a token rotated outside the reuse interval revokes the whole family', async () => {
       const first = cookiesFrom(await register()).sw_refresh ?? '';
       const second = cookiesFrom(await refresh(first).expect(200)).sw_refresh;
+      await ageRotations();
 
       // An attacker replays the stolen first token…
       const replay = await refresh(first).expect(401);
@@ -237,11 +246,34 @@ describe('Auth (e2e)', () => {
       expect(live).toBe(0);
     });
 
-    it('only one of two concurrent refreshes with the same token succeeds', async () => {
+    it('concurrent refreshes with the same token all succeed and keep the family alive', async () => {
       const token = cookiesFrom(await register()).sw_refresh ?? '';
-      const results = await Promise.all([refresh(token), refresh(token)]);
-      const statuses = results.map((r) => r.status);
-      expect(statuses).toContain(401);
+      const results = await Promise.all([
+        refresh(token),
+        refresh(token),
+        refresh(token),
+      ]);
+      expect(results.map((r) => r.status)).toEqual([200, 200, 200]);
+
+      const successors = results.map((r) => cookiesFrom(r).sw_refresh ?? '');
+      expect(new Set(successors).size).toBe(3);
+      for (const next of successors) await refresh(next).expect(200);
+    });
+
+    it('a token rotated moments ago works once more (reuse interval)', async () => {
+      const first = cookiesFrom(await register()).sw_refresh ?? '';
+      await refresh(first).expect(200);
+      await refresh(first).expect(200);
+    });
+
+    it('the reuse interval does not revive a logged-out family', async () => {
+      const first = cookiesFrom(await register()).sw_refresh ?? '';
+      const second = cookiesFrom(await refresh(first).expect(200)).sw_refresh;
+      await http
+        .post('/auth/logout')
+        .set('Cookie', `sw_refresh=${second}`)
+        .expect(204);
+      await refresh(first).expect(401);
     });
 
     it('rejects an unknown, expired or missing token', async () => {

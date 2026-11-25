@@ -7,10 +7,10 @@ export const ACCESS_TTL_SECONDS = 15 * 60;
 export const REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 /**
- * The browser only ever talks to the web origin, where the API lives under `/api` (docs/adr/0002),
- * so the refresh cookie is scoped to the browser-visible path of the auth routes.
+ * `/`, not `/api/auth`: the Next.js proxy refreshes the session while rendering pages, so the
+ * refresh cookie must reach page requests too (docs/adr/0003). It is still httpOnly.
  */
-export const REFRESH_COOKIE_PATH = '/api/auth';
+export const REFRESH_COOKIE_PATH = '/';
 
 export function cookieOptions(
   secure: boolean,

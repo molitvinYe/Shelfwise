@@ -11,6 +11,13 @@ import type { AuthUser } from './auth.types.js';
 
 const ALG = 'HS256';
 
+/**
+ * A token rotated less than this long ago may be presented again without killing its family.
+ * Covers concurrent requests that all carry the same refresh cookie (parallel prefetches hitting
+ * the Next.js proxy, two tabs). Same idea as Auth0's "reuse interval". docs/adr/0003.
+ */
+export const REUSE_INTERVAL_MS = 30_000;
+
 const AccessClaims = z.object({
   sub: z.uuid(),
   role: Role,
@@ -83,7 +90,8 @@ export class TokenService {
 
   /**
    * Revokes the presented token and issues its successor in the same family, atomically.
-   * Presenting a revoked token (or losing a race for the same token) revokes the whole family.
+   * A token that was rotated within REUSE_INTERVAL_MS (a concurrent request) gets a successor too,
+   * as long as the family is still alive. Any other revoked token = reuse: the family is revoked.
    * Returns instead of throwing so that the family revocation commits.
    */
   rotateRefresh(token: string): Promise<RotateResult> {
@@ -99,32 +107,56 @@ export class TokenService {
           data: { revokedAt: now },
         });
 
-      if (row.revokedAt) {
+      const issueSuccessor = async (): Promise<RotateResult> => {
+        const next = generateRefreshToken();
+        await tx.refreshToken.create({
+          data: {
+            userId: row.userId,
+            familyId: row.familyId,
+            tokenHash: hashRefreshToken(next),
+            expiresAt: refreshExpiry(),
+          },
+        });
+        return { kind: 'rotated', userId: row.userId, refreshToken: next };
+      };
+      /** Revoked by a rotation moments ago, and the family wasn't killed (logout / reuse) since. */
+      const isConcurrentUse = async (rotatedAt: Date | null) =>
+        rotatedAt !== null &&
+        now.getTime() - rotatedAt.getTime() < REUSE_INTERVAL_MS &&
+        (await tx.refreshToken.count({
+          where: {
+            familyId: row.familyId,
+            revokedAt: null,
+            expiresAt: { gt: now },
+          },
+        })) > 0;
+      const reuse = async (): Promise<RotateResult> => {
         await revokeFamily();
         return { kind: 'reused', userId: row.userId, familyId: row.familyId };
+      };
+
+      if (row.revokedAt) {
+        return (await isConcurrentUse(row.rotatedAt))
+          ? issueSuccessor()
+          : reuse();
       }
       if (row.expiresAt <= now) return { kind: 'invalid' };
 
-      // Conditional update: of two concurrent refreshes with one token, only one wins.
+      // Conditional update: if a concurrent refresh claimed this token first, re-check it.
       const claimed = await tx.refreshToken.updateMany({
         where: { id: row.id, revokedAt: null },
-        data: { revokedAt: now },
+        data: { revokedAt: now, rotatedAt: now },
       });
       if (claimed.count === 0) {
-        await revokeFamily();
-        return { kind: 'reused', userId: row.userId, familyId: row.familyId };
+        const current = await tx.refreshToken.findUnique({
+          where: { id: row.id },
+          select: { rotatedAt: true },
+        });
+        return (await isConcurrentUse(current?.rotatedAt ?? null))
+          ? issueSuccessor()
+          : reuse();
       }
-
-      const next = generateRefreshToken();
-      await tx.refreshToken.create({
-        data: {
-          userId: row.userId,
-          familyId: row.familyId,
-          tokenHash: hashRefreshToken(next),
-          expiresAt: refreshExpiry(),
-        },
-      });
-      return { kind: 'rotated', userId: row.userId, refreshToken: next };
+      return issueSuccessor();
     });
   }
 
