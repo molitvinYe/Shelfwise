@@ -23,7 +23,7 @@
 - `tsconfig.base.json` with `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` (drop the last one if it fights Prisma types — note it in the config).
 
 ## CI (GitHub Actions) — `.github/workflows/ci.yml`
-Trigger: PRs and pushes to `main`.
+Trigger: PRs into `develop` or `main`, and pushes to `develop` / `main`.
 
 ```
 setup (checkout, pnpm/action-setup, setup-node with pnpm cache, pnpm install --frozen-lockfile)
@@ -42,8 +42,8 @@ setup (checkout, pnpm/action-setup, setup-node with pnpm cache, pnpm install --f
 | Target | Setup |
 |--------|-------|
 | **Neon** | Project + `main` branch DB. Copy pooled URL → `DATABASE_URL`, direct URL → `DIRECT_URL`. Optional: a `preview` branch for testing migrations. |
-| **Render** | Web service from the GitHub repo, region close to Neon's. Root: repo root. Build: `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @shelfwise/api... build`. Start: `pnpm --filter @shelfwise/api start:prod` (`prisma migrate deploy && node dist/main.js`). Health check path `/health`. Auto-deploy on `main`. Env vars from [external-services.md](../external-services.md#environment-variables). Optionally `render.yaml` blueprint in repo. |
-| **Vercel** | Import repo, Root Directory `apps/web`, framework Next.js, install command uses pnpm at the workspace root (Vercel detects it). Env `API_ORIGIN`, `NEXT_PUBLIC_SITE_URL`. Preview deploys for PRs point to the prod API (acceptable for a demo) — or disable previews' API-dependent pages. |
+| **Render** | Web service from the GitHub repo, region close to Neon's. Root: repo root. Build: `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @shelfwise/api... build`. Start: `pnpm --filter @shelfwise/api start:prod` (`prisma migrate deploy && node dist/main.js`). Health check path `/health`. Auto-deploy on `main` only (production). Env vars from [external-services.md](../external-services.md#environment-variables). Optionally `render.yaml` blueprint in repo. |
+| **Vercel** | Import repo, Root Directory `apps/web`, framework Next.js, install command uses pnpm at the workspace root (Vercel detects it). Env `API_ORIGIN`, `NEXT_PUBLIC_SITE_URL`. Production branch: `main`. `develop` and PR branches get preview deploys; they point to the prod API (acceptable for a demo — there is only one free Render service). |
 | **Seed in prod** | Run once from local machine: `DATABASE_URL=<neon direct> pnpm db:seed`. Never from the Render start command. |
 
 ## Observability
@@ -54,7 +54,7 @@ setup (checkout, pnpm/action-setup, setup-node with pnpm cache, pnpm install --f
 ## Security baseline
 - `helmet` on the API; `x-powered-by` off.
 - Secrets only in provider env settings; `.env*` gitignored except `.env.example`.
-- GitHub: Dependabot for npm + actions (weekly), branch protection on `main` requiring CI.
+- GitHub: Dependabot for npm + actions (weekly), branch protection on `develop` and `main` requiring CI (no direct pushes, no force-pushes).
 
 ## Optional jobs (GitHub Actions `schedule`)
 - **Nightly demo reset** (step 17, if time): calls `POST /admin/demo/reset` with a `CRON_SECRET` header → restores the demo user's shelves/collections/reviews from seed fixtures.
