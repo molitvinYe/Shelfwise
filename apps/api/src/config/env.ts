@@ -19,6 +19,8 @@ const EnvSchema = z
     LOG_LEVEL: z.enum(LOG_LEVELS).optional(),
     /** Pooled connection used by the app (Neon: the `-pooler` host). Migrations use DIRECT_URL via prisma.config.ts. */
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+    /** Enables diagnostic routes such as `GET /health/stream` (SSE spike, docs/adr/0002). Off by default. */
+    ENABLE_DEBUG_ROUTES: z.stringbool().default(false),
     /** Git SHA of the deployed build. Render sets RENDER_GIT_COMMIT automatically. */
     RENDER_GIT_COMMIT: z.string().optional(),
   })
