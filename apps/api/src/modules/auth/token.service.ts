@@ -11,6 +11,15 @@ import type { AuthUser } from './auth.types.js';
 
 const ALG = 'HS256';
 
+/**
+ * A token rotated less than this long ago may be presented again without killing its family.
+ * Covers concurrent requests that all carry the same refresh cookie (parallel prefetches hitting
+ * the Next.js proxy, two tabs). Same idea as Auth0's "reuse interval". docs/adr/0003.
+ */
+export const REUSE_INTERVAL_MS = 10_000;
+/** At most this many extra successors per rotated token; the next replay counts as theft. */
+export const MAX_GRACE_SUCCESSORS = 10;
+
 const AccessClaims = z.object({
   sub: z.uuid(),
   role: Role,
@@ -83,7 +92,8 @@ export class TokenService {
 
   /**
    * Revokes the presented token and issues its successor in the same family, atomically.
-   * Presenting a revoked token (or losing a race for the same token) revokes the whole family.
+   * A token that was rotated within REUSE_INTERVAL_MS (a concurrent request) gets a successor too,
+   * as long as the family is still alive. Any other revoked token = reuse: the family is revoked.
    * Returns instead of throwing so that the family revocation commits.
    */
   rotateRefresh(token: string): Promise<RotateResult> {
@@ -99,32 +109,61 @@ export class TokenService {
           data: { revokedAt: now },
         });
 
-      if (row.revokedAt) {
+      const issueSuccessor = async (): Promise<RotateResult> => {
+        const next = generateRefreshToken();
+        await tx.refreshToken.create({
+          data: {
+            userId: row.userId,
+            familyId: row.familyId,
+            tokenHash: hashRefreshToken(next),
+            expiresAt: refreshExpiry(),
+          },
+        });
+        return { kind: 'rotated', userId: row.userId, refreshToken: next };
+      };
+      /**
+       * Revoked by a rotation moments ago, the family wasn't killed (logout / reuse) since, and the
+       * grace budget isn't spent. Claims one grace slot atomically, so the cap holds under races.
+       */
+      const isConcurrentUse = async (): Promise<boolean> => {
+        const familyAlive =
+          (await tx.refreshToken.count({
+            where: {
+              familyId: row.familyId,
+              revokedAt: null,
+              expiresAt: { gt: now },
+            },
+          })) > 0;
+        if (!familyAlive) return false;
+        const slot = await tx.refreshToken.updateMany({
+          where: {
+            id: row.id,
+            rotatedAt: { gt: new Date(now.getTime() - REUSE_INTERVAL_MS) },
+            graceCount: { lt: MAX_GRACE_SUCCESSORS },
+          },
+          data: { graceCount: { increment: 1 } },
+        });
+        return slot.count === 1;
+      };
+      const reuse = async (): Promise<RotateResult> => {
         await revokeFamily();
         return { kind: 'reused', userId: row.userId, familyId: row.familyId };
+      };
+
+      if (row.revokedAt) {
+        return (await isConcurrentUse()) ? issueSuccessor() : reuse();
       }
       if (row.expiresAt <= now) return { kind: 'invalid' };
 
-      // Conditional update: of two concurrent refreshes with one token, only one wins.
+      // Conditional update: if a concurrent refresh claimed this token first, re-check it.
       const claimed = await tx.refreshToken.updateMany({
         where: { id: row.id, revokedAt: null },
-        data: { revokedAt: now },
+        data: { revokedAt: now, rotatedAt: now },
       });
       if (claimed.count === 0) {
-        await revokeFamily();
-        return { kind: 'reused', userId: row.userId, familyId: row.familyId };
+        return (await isConcurrentUse()) ? issueSuccessor() : reuse();
       }
-
-      const next = generateRefreshToken();
-      await tx.refreshToken.create({
-        data: {
-          userId: row.userId,
-          familyId: row.familyId,
-          tokenHash: hashRefreshToken(next),
-          expiresAt: refreshExpiry(),
-        },
-      });
-      return { kind: 'rotated', userId: row.userId, refreshToken: next };
+      return issueSuccessor();
     });
   }
 

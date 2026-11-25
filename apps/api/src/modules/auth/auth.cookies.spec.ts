@@ -12,7 +12,7 @@ describe('cookieOptions', () => {
     expect(cookieOptions(false, '/', 60).secure).toBe(false);
   });
 
-  it('scopes the refresh cookie to the browser-visible auth path', () => {
-    expect(REFRESH_COOKIE_PATH).toBe('/api/auth');
+  it('sends the refresh cookie on page requests too (proxy silent refresh)', () => {
+    expect(REFRESH_COOKIE_PATH).toBe('/');
   });
 });

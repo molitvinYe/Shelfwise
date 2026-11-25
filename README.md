@@ -47,7 +47,7 @@ pnpm dev
 | `pnpm build` | builds all packages in dependency order |
 | `pnpm lint` | ESLint (web), oxlint (api) |
 | `pnpm typecheck` | `tsc --noEmit` in every package |
-| `pnpm test` | unit tests (Vitest) |
+| `pnpm test` | unit tests (Vitest, api + web) |
 | `pnpm test:e2e` | API e2e tests (Vitest + Supertest) |
 | `pnpm format` / `pnpm format:check` | Prettier |
 | `pnpm db:up` / `db:down` / `db:reset` | start / stop / wipe local Postgres (Docker Compose) |
