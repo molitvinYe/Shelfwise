@@ -6,6 +6,7 @@ import { buildLoggerOptions } from './common/logging/logger.options.js';
 import { createValidationPipe } from './common/pipes/validation.pipe.js';
 import { getEnv } from './config/env.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { BooksModule } from './modules/books/books.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -19,6 +20,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     HealthModule,
     UsersModule,
     AuthModule,
+    BooksModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: createValidationPipe },

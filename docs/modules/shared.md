@@ -12,12 +12,12 @@ packages/shared/src/
 ├─ index.ts              re-exports
 ├─ enums.ts              Role, ShelfStatus, BookSort
 ├─ errors.ts             ErrorCode enum, ApiError schema
-├─ limits.ts             MAX_PAGE_SIZE, REVIEW_MAX, COLLECTION_MAX_BOOKS, CHAT_MAX_MESSAGES …
-├─ pagination.ts         PageQuery schema, pageOf(itemSchema) factory
+├─ limits.ts             DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, CURSOR_MAX (later: REVIEW_MAX, COLLECTION_MAX_BOOKS, CHAT_MAX_MESSAGES …)
 └─ schemas/
    ├─ auth.ts            RegisterInput, LoginInput, PublicUser
    ├─ users.ts           UpdateProfileInput, ProfileStats, PublicProfile
-   ├─ books.ts           BookSearchQuery, BookListItem, BookDetail, BookCard, ReviewItem, ImportBookInput
+   ├─ pagination.ts      PageQuery schema, pageOf(itemSchema) factory, Page<T>
+   ├─ books.ts           BookSearchQuery, BookListItem, BookPage, BookDetail, SubjectList, ReviewItem, ReviewPage, BookIdParam (later: BookCard, ImportBookInput)
    ├─ shelves.ts         UpsertShelfInput, UpdateShelfInput, ShelfItem
    ├─ collections.ts     Create/UpdateCollectionInput, ReorderInput, CollectionSummary/Detail, PublicCollection
    ├─ admin.ts           AdminReviewItem, AdminUserItem, SetRoleInput, SetReviewHiddenInput

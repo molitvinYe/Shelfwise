@@ -13,18 +13,20 @@ The catalog: seed data, full-text search with filters/sort/pagination, book deta
 | Method | Path | Auth | Params / Body | Response |
 |--------|------|------|---------------|----------|
 | GET | `/books` | public | `BookSearchQuery`: q?, subject?, yearFrom?, yearTo?, language?, sort (`relevance` \| `title` \| `year_desc` \| `year_asc` \| `newest`), limit, cursor | `Page<BookListItem>` |
-| GET | `/books/subjects` | public | — | top subjects with counts (for the filter UI; cached in memory 1h) |
-| GET | `/books/:id` | public | — | `BookDetail` = book + `{ ratingAverage, ratingCount, myShelf? }` |
+| GET | `/books/subjects` | public | — | `{ items: [{ subject, count }] }`, most common first (filter UI). Not cached in the API (a GROUP BY over a few thousand rows); the web caches it for hours |
+| GET | `/books/:id` | public | — | `BookDetail` = book + `{ ratingAverage, ratingCount }`. Unknown **or malformed** id → `404 NOT_FOUND` |
 | GET | `/books/:id/reviews` | public | limit, cursor | `Page<ReviewItem>` (non-hidden reviews, newest first) |
 | GET | `/books/external-search` | access, throttled | q | Open Library search results (`olKey, title, authors, year, coverId, alreadyImported`) |
 | POST | `/books/import` | access, throttled | `{ olKey }` | `201 BookDetail` (or `200` if already present) |
 
 ## Business rules
-- **Search query builder** (pure function, unit-tested): builds SQL fragments from filters. With `q`, default sort = relevance (`ts_rank_cd`), else `title`. `sort=relevance` without `q` → 400.
-- **Cursor keys per sort:** relevance → `(rank, id)`, title → `(title, id)`, year → `(year NULLS LAST, id)`, newest → `(createdAt, id)`.
+- **Search query builder** (`book-search.query.ts`, pure, unit-tested): one `Prisma.sql` statement with every value bound. With `q`, default sort = relevance, else `title`. `sort=relevance` without `q` → 400 (validated in the shared schema).
+- **Relevance** = `ts_rank_cd(searchVector, websearch_to_tsquery('english', q))` + 1 for an exact (case-insensitive) title match, so "dune" puts *Dune* above *Dune Messiah* (same title weight otherwise). Rounded to `numeric(…, 6)`: `ts_rank_cd` is a `float4`, which would not round-trip exactly through a JSON cursor.
+- **Keyset:** the sort key is selected as `"sortKey"` in a subquery, the outer query applies `("sortKey", id) < / > (cursor)` and `ORDER BY "sortKey", id` in one direction, `LIMIT limit + 1`. Keys: relevance → rounded rank DESC, title → `title` ASC, year_desc/year_asc → `COALESCE(year, -1)` DESC / `COALESCE(year, 9999)` ASC (books without a year last in both), newest → `createdAt` DESC.
+- **Cursor** (`common/pagination/cursor.ts`): base64url JSON `{ s: sort, k: key, id }`; a cursor from another sort or a malformed one → `400 VALIDATION_FAILED`.
 - **Subject filter:** `subjects @> ARRAY[$subject]` (GIN). Subjects normalised to lowercase at seed/import.
 - **Rating summary:** `AVG(rating), COUNT(rating)` over `UserBook` where `rating IS NOT NULL` (index on `bookId`). Not denormalised — catalog is small; revisit only if it shows up as slow.
-- **`myShelf`:** included when a user is authenticated (optional auth on this route).
+- **`myShelf`:** moved to step 10 (shelves). The public book page is cached and shared by all visitors, so the viewer's shelf state will come from a separate authenticated request rather than this response.
 - **Seed pipeline:**
   - `pnpm data:fetch` → `apps/api/scripts/fetch-openlibrary.ts` (tsx): for each of the 32 curated categories (`open-library/categories.ts`) fetch the 150 most-read works from `search.json?q=subject:"…"&sort=readinglog&lang=en`, keep only works with title, author, year and cover; dedupe by `olKey`; then `/works/{key}.json` for descriptions (2 workers, ~3 req/s overall). `User-Agent: Shelfwise/0.2 (${OPEN_LIBRARY_CONTACT})`. Writes `apps/api/data/books.snapshot.json` (sorted by `olKey`, stable diffs) — committed.
   - **Mapping** (`open-library.mapper.ts`, shared with import in step 9): title of the best English edition when there is one (`lang=en` → `editions`), else the work title; up to 5 unique authors; `language` = `eng` if any English edition, else the first; description from string or `{ value }`, without Open Library's `----------` source footer and markdown links, ≤ 2000 chars.
@@ -52,6 +54,6 @@ Catalog `/books`, book page `/books/[id]`, import dialog — see [web.md](web.md
 1. Prisma `Book` model + raw SQL migration: trigger function, trigger, GIN indexes (step 3).
 2. Open Library client (fetch with timeout + retry) and mapper (step 7) ✅.
 3. `data:fetch` script → commit snapshot; `db:seed` (step 7) ✅.
-4. Search query builder + `GET /books` + `GET /books/subjects` (step 8).
-5. `GET /books/:id`, `GET /books/:id/reviews` (step 8; reviews list fills up in step 10).
+4. Search query builder + `GET /books` + `GET /books/subjects` (step 8) ✅.
+5. `GET /books/:id`, `GET /books/:id/reviews` (step 8; reviews list fills up in step 10) ✅.
 6. External search + import (step 9).

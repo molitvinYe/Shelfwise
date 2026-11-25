@@ -11,12 +11,20 @@ export function SiteHeader() {
         aria-label="Main"
         className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4 sm:px-6"
       >
-        <Link
-          href="/"
-          className="font-mono text-sm font-semibold uppercase tracking-widest text-accent"
-        >
-          Shelfwise
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
+            className="font-mono text-sm font-semibold uppercase tracking-widest text-accent"
+          >
+            Shelfwise
+          </Link>
+          <Link
+            href="/books"
+            className="text-sm text-muted hover:text-foreground"
+          >
+            Catalog
+          </Link>
+        </div>
         {/* The session is a request-time read: it streams in behind this boundary. */}
         <Suspense fallback={<NavPlaceholder />}>
           <UserNav />
