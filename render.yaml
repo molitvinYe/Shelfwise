@@ -1,0 +1,40 @@
+# Render Blueprint for the API (docs/adr/0007, docs/modules/infra.md#deploy).
+# Create via Render Dashboard → New → Blueprint → pick this repo. Secrets are entered in the dashboard (sync: false).
+services:
+  - type: web
+    name: shelfwise-api
+    runtime: node
+    plan: free
+    # Keep close to the Neon region (Neon: AWS eu-central-1 / Frankfurt).
+    region: frankfurt
+    # Production deploys only from main (develop is the integration branch).
+    branch: main
+    # Deploy only after the CI check on main is green.
+    autoDeployTrigger: checksPass
+    # --prod=false: NODE_ENV=production would otherwise skip devDependencies (Nest CLI, TypeScript, Prisma CLI).
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter "@shelfwise/api..." build
+    # Free plan has no pre-deploy hook, so migrations run on start (idempotent).
+    startCommand: pnpm --filter @shelfwise/api start:prod
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/shared/**
+        - package.json
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - render.yaml
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: DATABASE_URL
+        sync: false # Neon pooled connection string
+      - key: DIRECT_URL
+        sync: false # Neon direct connection string (migrations)
+      # 'true' only while running the SSE spike (roadmap step 5), then back to 'false'.
+      - key: ENABLE_DEBUG_ROUTES
+        sync: false

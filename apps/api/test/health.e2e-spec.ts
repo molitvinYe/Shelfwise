@@ -52,6 +52,39 @@ describe('Health (e2e)', () => {
         db: 'ok',
       });
     });
+
+    it('GET /health/stream emits one SSE event per second, as they happen', async () => {
+      const arrivals: number[] = [];
+      const startedAt = Date.now();
+
+      const res = await request(app.getHttpServer())
+        .get('/health/stream?seconds=2')
+        .buffer(true)
+        .parse((response, done) => {
+          let body = '';
+          response.on('data', (chunk: Buffer) => {
+            arrivals.push(Date.now() - startedAt);
+            body += chunk.toString();
+          });
+          response.on('end', () => done(null, body));
+        })
+        .expect(200)
+        .expect('content-type', /text\/event-stream/);
+
+      const events = String(res.body)
+        .split('\n\n')
+        .filter((block) => block.includes('data:'));
+      expect(events).toHaveLength(2);
+      expect(events[0]).toContain('"tick":1');
+      // Streamed, not buffered: the first chunk arrives well before the stream ends.
+      expect(arrivals[0]).toBeLessThan(1_800);
+    });
+
+    it('GET /health/stream validates its query', async () => {
+      await request(app.getHttpServer())
+        .get('/health/stream?seconds=0')
+        .expect(400);
+    });
   });
 
   describe('with the database down', () => {
